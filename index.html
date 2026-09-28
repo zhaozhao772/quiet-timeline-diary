@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#F3F8F5">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<title>我的记录 · 时间轴日记</title>
+<title>我的记录</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ccircle cx='12' cy='12' r='11' fill='%23DCEEE5'/%3E%3Cpath d='M7.5 16.5C7.5 10.5 11 7.5 17 7c.5 6.5-3 9.5-9.5 9.5z' fill='%2386B8A2'/%3E%3C/svg%3E">
 <style>
 /* ================= 基础与配色 ================= */
@@ -22,6 +22,7 @@
   --ink:       #3F5652;   /* 深色文字（非纯黑） */
   --ink-2:     #718581;   /* 次级文字 */
   --body-ink:  #4B625D;   /* 正文阅读色 */
+  --stamp-ink: #5E7A72;   /* 追加标记文字 */
   --danger:    #B87F72;   /* 柔和陶土色（删除） */
   --radius:    16px;
   --shadow:    0 6px 24px rgba(63,86,82,.07);
@@ -84,28 +85,42 @@ input,textarea{font:inherit;color:var(--ink)}
 .icon-btn:active{background:var(--green-soft);transform:scale(.92)}
 .scroll-area{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;position:relative;z-index:2}
 
-/* ================= 首页 · 文件夹 ================= */
+/* ================= 首页 · 记录列表 ================= */
 .home-body{padding:18px 16px calc(36px + env(safe-area-inset-bottom))}
-.folder-card{
-  position:relative;overflow:hidden;
-  display:flex;align-items:center;gap:14px;
-  padding:18px 18px;border-radius:18px;
-  background:linear-gradient(133deg,#E9F4EE 0%,#E4F0F0 55%,#E1EDF5 100%);
-  box-shadow:var(--shadow);
+.section-title{
+  display:flex;align-items:center;gap:10px;
+  font-size:22px;font-weight:700;letter-spacing:.8px;color:var(--ink);
+  margin:8px 0 16px;
 }
-.folder-card .leaf-mark{position:absolute;right:-14px;top:-16px;width:110px;opacity:.14;transform:rotate(24deg)}
-.folder-icon{
-  width:46px;height:46px;flex:none;border-radius:14px;
-  background:rgba(255,255,255,.75);
+.section-title .folder-icon-small{
+  width:40px;height:40px;border-radius:12px;
+  background:linear-gradient(135deg,var(--green-soft),var(--blue-soft));
   display:flex;align-items:center;justify-content:center;color:var(--green-deep);
   box-shadow:0 2px 8px rgba(63,86,82,.06);
 }
-.folder-name{font-size:16.5px;font-weight:700;letter-spacing:.3px}
-.folder-sub{font-size:12.5px;color:var(--ink-2);margin-top:3px;letter-spacing:.3px}
 
-/* 新建按钮（浅绿 · 轻盈） */
+/* 分类/统计卡 */
+.category-card{
+  display:flex;align-items:center;gap:10px;
+  background:linear-gradient(168deg,#FEFEFE,#F7FBF9);
+  border-radius:var(--radius);padding:14px 16px;
+  box-shadow:var(--shadow);margin-bottom:16px;
+}
+.cat-item{
+  flex:1;display:flex;align-items:center;gap:10px;
+  padding:10px 12px;border-radius:12px;
+  background:var(--green-soft);color:var(--green-ink);
+  transition:transform .15s;
+}
+.cat-item:active{transform:scale(.98)}
+.cat-icon{width:28px;height:28px;border-radius:8px;background:rgba(255,255,255,.6);display:flex;align-items:center;justify-content:center}
+.cat-text{flex:1}
+.cat-name{font-size:14px;font-weight:650;letter-spacing:.5px}
+.cat-count{font-size:12px;opacity:.85;margin-top:2px}
+
+/* 新建按钮 */
 .btn-new{
-  width:100%;margin-top:14px;height:48px;border-radius:15px;
+  width:100%;height:48px;border-radius:15px;
   display:flex;align-items:center;justify-content:center;gap:7px;
   background:var(--green-soft);color:var(--green-ink);
   font-size:15px;font-weight:600;letter-spacing:1px;
@@ -114,32 +129,39 @@ input,textarea{font:inherit;color:var(--ink)}
 }
 .btn-new:active{background:#CFE7DB;transform:scale(.98)}
 
-/* ================= 首页 · 时间轴 ================= */
-.timeline{position:relative;margin-top:24px}
-.timeline::before{
-  content:"";position:absolute;left:10px;top:30px;bottom:34px;width:2px;border-radius:2px;
-  background:linear-gradient(180deg,var(--green),var(--blue));opacity:.5;
+/* 记录列表 */
+.note-list{position:relative}
+.note-item{
+  display:flex;gap:14px;margin-bottom:14px;position:relative;
 }
-.tl-item{display:flex;gap:12px;margin-bottom:14px;position:relative}
-.tl-rail{width:22px;flex:none;position:relative}
-.tl-dot{
-  position:absolute;left:6px;top:25px;width:10px;height:10px;border-radius:50%;
-  background:var(--green);
+.note-rail{
+  width:26px;flex:none;display:flex;flex-direction:column;align-items:center;position:relative;
+}
+.note-rail::before{
+  content:"";position:absolute;top:32px;bottom:-14px;left:50%;transform:translateX(-50%);
+  width:1.5px;background:linear-gradient(180deg,var(--green),var(--blue));opacity:.35;border-radius:2px;
+}
+.note-item:last-child .note-rail::before{display:none}
+.note-dot{
+  width:10px;height:10px;border-radius:50%;background:var(--green);margin-top:26px;
   box-shadow:0 0 0 4px rgba(134,184,162,.14), 0 0 12px rgba(134,184,162,.5);
 }
-.tl-card{
-  flex:1;min-width:0;padding:15px 17px 14px;border-radius:var(--radius);
+.note-card{
+  flex:1;min-width:0;padding:16px 17px 15px;border-radius:var(--radius);
   background:linear-gradient(168deg,#FEFEFE 0%,#F5FAF7 75%,#F1F7F3 100%);
   box-shadow:var(--shadow);
   transition:transform .18s var(--ease),box-shadow .18s;
 }
-.tl-card:active{transform:scale(.985)}
-.tl-meta{font-size:12px;color:var(--blue);font-weight:600;letter-spacing:.6px}
-.tl-title{
-  font-size:16px;font-weight:650;color:var(--ink);
-  margin:5px 0 3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+.note-card:active{transform:scale(.985)}
+.note-created{
+  font-size:12px;color:var(--blue);font-weight:600;letter-spacing:.6px;
+  display:flex;align-items:center;gap:6px;
 }
-.tl-preview{
+.note-title{
+  font-size:16.5px;font-weight:650;color:var(--ink);
+  margin:6px 0 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.note-preview{
   font-size:13.5px;color:var(--ink-2);line-height:1.75;
   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
 }
@@ -148,7 +170,7 @@ input,textarea{font:inherit;color:var(--ink)}
   28%{box-shadow:0 0 0 7px rgba(134,184,162,.32),var(--shadow)}
   100%{box-shadow:var(--shadow)}
 }
-.tl-card.flash{animation:cardGlow 1.3s var(--ease)}
+.note-card.flash{animation:cardGlow 1.3s var(--ease)}
 
 /* 空状态 */
 .empty-state{padding:64px 30px 40px;text-align:center;color:var(--ink-2)}
@@ -157,7 +179,7 @@ input,textarea{font:inherit;color:var(--ink)}
 .empty-sub{font-size:13px;margin-top:8px;line-height:2}
 .empty-state .btn-new{width:auto;padding:0 26px;margin:22px auto 0}
 
-/* ================= 详情 · 翻阅视图 ================= */
+/* ================= 详情 · 只读历史展示 ================= */
 .detail-topbar{gap:6px}
 .btn-back{
   display:flex;align-items:center;gap:3px;height:38px;padding:0 6px 0 2px;
@@ -165,81 +187,87 @@ input,textarea{font:inherit;color:var(--ink)}
   border-radius:10px;flex:none;transition:transform .15s;
 }
 .btn-back:active{transform:scale(.94)}
-.detail-meta{
-  margin-left:auto;font-size:12.5px;color:var(--blue);
-  font-weight:600;letter-spacing:.8px;white-space:nowrap;
-}
-.pager{flex:1;position:relative;overflow:hidden;touch-action:pan-y}
-.slide{
-  position:absolute;inset:0;overflow-y:auto;-webkit-overflow-scrolling:touch;
-  padding:16px 16px 30px;
-}
-.pager.anim .slide{transition:transform var(--t) var(--ease)}
-.diary-card{
+.detail-actions-top{display:flex;align-items:center;gap:6px;margin-left:auto}
+.detail-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 16px 30px}
+.detail-card{
   background:linear-gradient(170deg,#FEFEFE 0%,#F6FAF8 70%,#F2F8F4 100%);
-  border-radius:18px;padding:24px 22px 34px;
+  border-radius:18px;padding:22px 20px 28px;
   box-shadow:var(--shadow);
-  min-height:100%;
+  min-height:calc(100% - 20px);
 }
-.diary-meta{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--blue);font-weight:600;letter-spacing:.6px}
-.diary-title{font-size:21px;line-height:1.55;font-weight:700;color:var(--ink);margin:16px 0 20px;letter-spacing:.3px;word-break:break-word}
-.diary-body{
+.detail-created{
+  display:inline-flex;align-items:center;gap:7px;
+  font-size:12px;color:var(--blue);font-weight:600;letter-spacing:.6px;
+  background:var(--blue-soft);padding:7px 12px;border-radius:99px;
+}
+.detail-title{font-size:21px;line-height:1.55;font-weight:700;color:var(--ink);margin:16px 0 18px;letter-spacing:.3px;word-break:break-word}
+.detail-content{
   font-size:15.5px;line-height:2.15;color:var(--body-ink);
   white-space:pre-wrap;word-break:break-word;letter-spacing:.2px;
 }
-.diary-end{margin-top:30px;display:flex;justify-content:center;opacity:.5}
-.diary-end i{width:5px;height:5px;border-radius:50%;background:var(--green);margin:0 5px}
-.diary-end i:nth-child(2){background:var(--blue)}
+.detail-content .stamp-line{
+  color:var(--stamp-ink);font-weight:600;letter-spacing:.3px;
+}
+.detail-end{margin-top:30px;display:flex;justify-content:center;opacity:.5}
+.detail-end i{width:5px;height:5px;border-radius:50%;background:var(--green);margin:0 5px}
+.detail-end i:nth-child(2){background:var(--blue)}
 
-/* 详情底部：编辑 ‹ 位置 › 删除 */
 .detail-footer{
-  flex:none;display:flex;align-items:center;
-  padding:8px 14px calc(10px + env(safe-area-inset-bottom));
+  flex:none;display:flex;align-items:center;justify-content:center;gap:14px;
+  padding:10px 14px calc(12px + env(safe-area-inset-bottom));
   background:rgba(243,248,245,.86);
   -webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
   border-top:1px solid rgba(111,142,133,.08);
 }
-.mini-act{
-  width:56px;height:48px;border-radius:12px;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
-  font-size:10.5px;color:var(--ink-2);letter-spacing:1px;
-  transition:background .2s,transform .15s;
+.btn-edit-main{
+  height:46px;border-radius:14px;padding:0 26px;
+  display:flex;align-items:center;justify-content:center;gap:7px;
+  background:var(--green-deep);color:#F6FBF8;font-size:15px;font-weight:600;letter-spacing:1px;
+  box-shadow:0 4px 14px rgba(94,148,128,.3);transition:transform .15s;
 }
-.mini-act:active{background:var(--green-soft);transform:scale(.93)}
-.mini-act.warn:active{background:#F3E4E0}
-.mini-act.warn{color:var(--danger)}
-.pager-ctl{flex:1;display:flex;align-items:center;justify-content:center;gap:6px}
-.pg-btn{
-  width:36px;height:36px;border-radius:50%;
-  display:flex;align-items:center;justify-content:center;
-  color:var(--green-deep);background:var(--green-soft);
-  transition:opacity .2s,transform .15s;
-}
-.pg-btn:active{transform:scale(.88)}
-.pg-btn:disabled{opacity:.28;background:rgba(111,142,133,.1)}
-.pg-pos{font-size:12px;color:var(--ink-2);letter-spacing:1.5px;min-width:58px;text-align:center;font-variant-numeric:tabular-nums}
+.btn-edit-main:active{transform:scale(.97)}
 
 /* ================= 编辑视图 ================= */
-.edit-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 16px 26px;display:flex;flex-direction:column}
-.edit-date-row{
-  display:flex;align-items:center;gap:10px;flex:none;
-  background:var(--blue-soft);border-radius:14px;padding:11px 14px;color:var(--blue-ink);
+.edit-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 16px 26px;display:flex;flex-direction:column;gap:12px}
+.edit-meta-card{
+  flex:none;background:var(--blue-soft);border-radius:14px;padding:12px 14px;color:var(--blue-ink);
 }
-#edit-date{
-  flex:1;min-width:0;border:0;background:transparent;outline:none;
-  font-size:13.5px;font-weight:600;letter-spacing:.5px;color:var(--blue-ink);
-}
+.edit-meta-row{display:flex;align-items:center;gap:10px;font-size:13px;font-weight:600;letter-spacing:.3px}
+.edit-meta-row + .edit-meta-row{margin-top:8px;padding-top:8px;border-top:1px dashed rgba(79,116,144,.18)}
+.edit-meta-label{opacity:.85}
+.edit-meta-value{flex:1;text-align:right}
 .edit-title{
   border:0;outline:none;background:transparent;width:100%;
   font-size:19.5px;font-weight:700;letter-spacing:.3px;color:var(--ink);
-  padding:18px 4px 12px;
+  padding:8px 4px 4px;
 }
-.edit-title::placeholder,.edit-content::placeholder{color:#A8BAB5;font-weight:400}
+.edit-title::placeholder{color:#A8BAB5;font-weight:400}
+.edit-history-box{
+  flex:none;background:linear-gradient(168deg,#FEFEFE,#F7FBF9);border-radius:14px;padding:14px 16px;
+  box-shadow:var(--shadow);max-height:180px;overflow-y:auto;
+}
+.edit-history-label{
+  font-size:12px;color:var(--blue-ink);font-weight:600;letter-spacing:.8px;margin-bottom:8px;
+  display:flex;align-items:center;gap:6px;
+}
+.edit-history{
+  font-size:13.5px;line-height:1.95;color:var(--ink-2);white-space:pre-wrap;word-break:break-word;
+}
+.edit-new-area{
+  flex:1;display:flex;flex-direction:column;min-height:140px;
+  background:linear-gradient(168deg,#FEFEFE,#F7FBF9);border-radius:14px;padding:14px 16px;
+  box-shadow:var(--shadow);
+}
+.edit-new-label{
+  font-size:12px;color:var(--green-ink);font-weight:600;letter-spacing:.8px;margin-bottom:8px;
+  display:flex;align-items:center;gap:6px;
+}
 .edit-content{
-  flex:1;min-height:180px;border:0;outline:none;background:transparent;width:100%;
+  flex:1;min-height:100px;border:0;outline:none;background:transparent;width:100%;
   font-size:15.5px;line-height:2.1;color:var(--body-ink);
-  padding:4px 4px 30px;resize:none;letter-spacing:.2px;
+  resize:none;letter-spacing:.2px;
 }
+.edit-content::placeholder{color:#A8BAB5;font-weight:400}
 .edit-footer{
   flex:none;display:flex;gap:12px;align-items:center;
   padding:12px 18px calc(14px + env(safe-area-inset-bottom));
@@ -283,56 +311,6 @@ input,textarea{font:inherit;color:var(--ink)}
 .set-stat b{font-size:24px;font-weight:700;color:var(--green-deep);letter-spacing:.5px}
 .set-stat span{font-size:12.5px;color:var(--ink-2);letter-spacing:.5px}
 
-/* ================= 时间轴导航 Sheet ================= */
-.overlay{
-  position:fixed;inset:0;z-index:55;
-  background:rgba(63,86,82,.26);
-  -webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px);
-  opacity:0;pointer-events:none;transition:opacity .3s;
-}
-.overlay.open{opacity:1;pointer-events:auto}
-.sheet{
-  position:fixed;left:0;right:0;bottom:0;z-index:60;
-  background:rgba(253,254,253,.97);
-  -webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);
-  border-radius:22px 22px 0 0;
-  transform:translateY(105%);transition:transform .34s var(--ease);
-  padding:8px 20px calc(18px + env(safe-area-inset-bottom));
-  max-height:72dvh;display:flex;flex-direction:column;
-  box-shadow:0 -10px 40px rgba(63,86,82,.1);
-}
-.sheet.open{transform:none}
-.sheet-grab{width:38px;height:4px;border-radius:2px;background:rgba(111,142,133,.25);margin:4px auto 10px;flex:none}
-.sheet-head{display:flex;align-items:center;gap:8px;flex:none;padding-bottom:10px;border-bottom:1px solid rgba(111,142,133,.09)}
-.sheet-title{font-size:15px;font-weight:700;letter-spacing:1px;color:var(--ink)}
-.sheet-close{margin-left:auto;width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--ink-2)}
-.sheet-close:active{background:var(--green-soft)}
-.sheet-body{overflow-y:auto;-webkit-overflow-scrolling:touch;padding:12px 2px 6px}
-.tl-nav-year{
-  font-size:13px;color:var(--blue-ink);font-weight:700;letter-spacing:2px;
-  margin:14px 0 6px 4px;display:flex;align-items:center;gap:8px;
-}
-.tl-nav-year::before{content:"";width:14px;height:1.5px;background:var(--blue);opacity:.5;border-radius:2px}
-.tl-nav-group{position:relative;padding-left:8px;margin-left:5px}
-.tl-nav-group::before{
-  content:"";position:absolute;left:8px;top:34px;bottom:14px;width:1.5px;
-  background:linear-gradient(180deg,var(--green),var(--blue));opacity:.35;border-radius:2px;
-}
-.tl-nav-item{
-  position:relative;display:flex;align-items:center;gap:10px;width:100%;
-  padding:9px 10px 9px 6px;border-radius:11px;text-align:left;
-  transition:background .2s;
-}
-.tl-nav-item:active{background:var(--green-soft)}
-.tl-nav-item::before{
-  content:"";width:7px;height:7px;border-radius:50%;background:var(--green);flex:none;
-  box-shadow:0 0 0 3px rgba(134,184,162,.16),0 0 8px rgba(134,184,162,.45);
-  margin-left:5px;
-}
-.tl-nav-date{font-size:13px;color:var(--blue-ink);font-weight:650;letter-spacing:.5px;flex:none;font-variant-numeric:tabular-nums}
-.tl-nav-title{font-size:13.5px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.sheet-empty{padding:30px 0;text-align:center;font-size:13px;color:var(--ink-2)}
-
 /* ================= 模态框 / Toast ================= */
 .modal-mask{
   position:fixed;inset:0;z-index:70;
@@ -351,7 +329,6 @@ input,textarea{font:inherit;color:var(--ink)}
 .modal-title{font-size:16.5px;font-weight:700;letter-spacing:.5px;margin-bottom:10px}
 .modal-body{font-size:13.5px;color:var(--ink-2);line-height:2;letter-spacing:.2px;white-space:pre-line}
 .modal-acts{margin-top:20px;display:flex;flex-direction:column;gap:9px}
-.modal-acts.row{flex-direction:row}
 .mbtn{
   height:44px;border-radius:13px;font-size:14.5px;font-weight:600;letter-spacing:.8px;
   display:flex;align-items:center;justify-content:center;transition:transform .15s;
@@ -390,41 +367,46 @@ input,textarea{font:inherit;color:var(--ink)}
   </svg>
 </div>
 
-<!-- ============ 首页：文件夹 + 时间轴 ============ -->
+<!-- ============ 首页：记录列表 ============ -->
 <section id="view-home" class="view">
   <header class="topbar">
-    <div class="topbar-title">
+    <div class="topbar-title" id="home-title">
       <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#5E9480" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 7.5A1.5 1.5 0 015 6h4.2l1.8 2H19a1.5 1.5 0 011.5 1.5v8A1.5 1.5 0 0119 19H5a1.5 1.5 0 01-1.5-1.5v-10z"/></svg>
       我的记录
     </div>
     <div class="topbar-spacer"></div>
-    <button class="icon-btn" id="btn-tlnav" aria-label="时间轴导航" title="时间轴导航">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>
-    </button>
     <button class="icon-btn" id="btn-settings" aria-label="设置" title="设置">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8h8.5M17.5 8h1.5M5 16h2.5M11.5 16H19"/><circle cx="15" cy="8" r="2.2"/><circle cx="9" cy="16" r="2.2"/></svg>
     </button>
   </header>
   <div class="scroll-area" id="home-scroll">
     <div class="home-body">
-      <div class="folder-card">
-        <svg class="leaf-mark" viewBox="0 0 100 100" fill="none">
-          <path d="M20 92C20 46 46 20 92 18c2 46-22 72-66 74z" stroke="#86B8A2" stroke-width="2"/>
-          <path d="M22 90C40 60 60 40 88 22" stroke="#86B8A2" stroke-width="1.5"/>
-        </svg>
-        <div class="folder-icon">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 7.5A1.5 1.5 0 015 6h4.2l1.8 2H19a1.5 1.5 0 011.5 1.5v8A1.5 1.5 0 0119 19H5a1.5 1.5 0 01-1.5-1.5v-10z"/></svg>
+      <div class="section-title">
+        <div class="folder-icon-small">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 7.5A1.5 1.5 0 015 6h4.2l1.8 2H19a1.5 1.5 0 011.5 1.5v8A1.5 1.5 0 0119 19H5a1.5 1.5 0 01-1.5-1.5v-10z"/></svg>
         </div>
-        <div>
-          <div class="folder-name">我的记录</div>
-          <div class="folder-sub" id="folder-sub">一个安静的记录空间</div>
+        我的记录
+      </div>
+
+      <div class="category-card">
+        <div class="cat-item" id="cat-all">
+          <div class="cat-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+          </div>
+          <div class="cat-text">
+            <div class="cat-name">全部</div>
+            <div class="cat-count" id="cat-count">0 篇记录</div>
+          </div>
         </div>
       </div>
+
       <button class="btn-new" id="btn-new">
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
         新建记录
       </button>
-      <div class="timeline" id="timeline"></div>
+
+      <div class="note-list" id="note-list"></div>
+
       <div class="empty-state" id="empty-state" hidden>
         <svg width="52" height="52" viewBox="0 0 100 100" fill="none">
           <path d="M20 92C20 46 46 20 92 18c2 46-22 72-66 74z" stroke="#86B8A2" stroke-width="2.4"/>
@@ -441,42 +423,42 @@ input,textarea{font:inherit;color:var(--ink)}
   </div>
 </section>
 
-<!-- ============ 详情：翻阅日记 ============ -->
+<!-- ============ 详情：只读历史展示 ============ -->
 <section id="view-detail" class="view">
   <header class="topbar detail-topbar">
     <button class="btn-back" id="btn-back">
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12H5"/><path d="M11 18l-6-6 6-6"/></svg>
-      返回时间轴
+      返回列表
     </button>
-    <div class="detail-meta" id="detail-meta"></div>
-  </header>
-  <div class="pager" id="pager">
-    <div class="slide" id="slide-prev"></div>
-    <div class="slide" id="slide-cur"></div>
-    <div class="slide" id="slide-next"></div>
-  </div>
-  <footer class="detail-footer">
-    <button class="mini-act" id="btn-edit">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l1-4L16.5 4.5a2.05 2.05 0 013 3L8 19l-4 1z"/></svg>
-      编辑
-    </button>
-    <div class="pager-ctl">
-      <button class="pg-btn" id="pg-prev" aria-label="上一篇">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 6l-6 6 6 6"/></svg>
+    <div class="detail-actions-top">
+      <button class="icon-btn" id="btn-detail-edit" aria-label="编辑" title="编辑">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l1-4L16.5 4.5a2.05 2.05 0 013 0 2.05 2.05 0 010 3L8 19l-4 1z"/></svg>
       </button>
-      <div class="pg-pos" id="pg-pos"></div>
-      <button class="pg-btn" id="pg-next" aria-label="下一篇">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 6l6 6-6 6"/></svg>
+      <button class="icon-btn" id="btn-detail-del" aria-label="删除" title="删除">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 7h15M9.5 7V5.5A1.5 1.5 0 0111 4h2a1.5 1.5 0 011.5 1.5V7M6.5 7l.8 12A2 2 0 009.3 21h5.4a2 2 0 002-1.9l.8-12"/><path d="M10 11v6M14 11v6"/></svg>
       </button>
     </div>
-    <button class="mini-act warn" id="btn-del">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 7h15M9.5 7V5.5A1.5 1.5 0 0111 4h2a1.5 1.5 0 011.5 1.5V7M6.5 7l.8 12A2 2 0 009.3 21h5.4a2 2 0 002-1.9l.8-12"/><path d="M10 11v6M14 11v6"/></svg>
-      删除
+  </header>
+  <div class="detail-body" id="detail-scroll">
+    <div class="detail-card">
+      <div class="detail-created" id="detail-created">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5.5" width="16" height="15" rx="2.5"/><path d="M8 3.5v4M16 3.5v4M4 10.5h16"/></svg>
+        <span id="detail-created-text"></span>
+      </div>
+      <h1 class="detail-title" id="detail-title"></h1>
+      <div class="detail-content" id="detail-content"></div>
+      <div class="detail-end"><i></i><i></i></div>
+    </div>
+  </div>
+  <footer class="detail-footer">
+    <button class="btn-edit-main" id="btn-edit">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l1-4L16.5 4.5a2.05 2.05 0 013 0 2.05 2.05 0 010 3L8 19l-4 1z"/></svg>
+      继续记录
     </button>
   </footer>
 </section>
 
-<!-- ============ 编辑：新建 / 修改 ============ -->
+<!-- ============ 编辑：新建 / 追加 ============ -->
 <section id="view-edit" class="view">
   <header class="topbar">
     <button class="btn-back" id="edit-back">
@@ -485,12 +467,27 @@ input,textarea{font:inherit;color:var(--ink)}
     <div class="topbar-title" id="edit-title-label" style="font-size:15px">新建记录</div>
   </header>
   <div class="edit-body">
-    <div class="edit-date-row">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5.5" width="16" height="15" rx="2.5"/><path d="M8 3.5v4M16 3.5v4M4 10.5h16"/></svg>
-      <input type="datetime-local" id="edit-date">
+    <div class="edit-meta-card">
+      <div class="edit-meta-row">
+        <span class="edit-meta-label">首次记录时间</span>
+        <span class="edit-meta-value" id="edit-created"></span>
+      </div>
     </div>
     <input class="edit-title" id="edit-title" type="text" placeholder="输入标题" maxlength="60" autocomplete="off">
-    <textarea class="edit-content" id="edit-content" placeholder="在这里记录……"></textarea>
+    <div class="edit-history-box" id="edit-history-box" hidden>
+      <div class="edit-history-label">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>
+        已保存的内容（只读）
+      </div>
+      <div class="edit-history" id="edit-history"></div>
+    </div>
+    <div class="edit-new-area">
+      <div class="edit-new-label" id="edit-new-label">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7.5 11l4.5 4.5L16.5 11M4.5 19.5h15"/></svg>
+        <span id="edit-new-label-text">在这里写下第一篇……</span>
+      </div>
+      <textarea class="edit-content" id="edit-content" placeholder=""></textarea>
+    </div>
   </div>
   <footer class="edit-footer">
     <button class="btn btn-cancel" id="edit-cancel">取消</button>
@@ -568,19 +565,6 @@ input,textarea{font:inherit;color:var(--ink)}
   </div>
 </section>
 
-<!-- 时间轴导航 Sheet -->
-<div class="overlay" id="overlay"></div>
-<div class="sheet" id="sheet-tlnav">
-  <div class="sheet-grab"></div>
-  <div class="sheet-head">
-    <div class="sheet-title">时间轴</div>
-    <button class="sheet-close" id="sheet-close" aria-label="关闭">
-      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></svg>
-    </button>
-  </div>
-  <div class="sheet-body" id="sheet-body"></div>
-</div>
-
 <!-- 通用模态框 -->
 <div class="modal-mask" id="modal-mask">
   <div class="modal">
@@ -601,15 +585,15 @@ input,textarea{font:inherit;color:var(--ink)}
 const $ = s => document.querySelector(s);
 const p2 = n => String(n).padStart(2,"0");
 const WEEK = ["日","一","二","三","四","五","六"];
+function fmtCNDate(ts){ const d=new Date(ts); return `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日`; }
 function fmtDate(ts){ const d=new Date(ts); return `${d.getFullYear()}.${p2(d.getMonth()+1)}.${p2(d.getDate())}`; }
 function fmtMD(ts){ const d=new Date(ts); return `${p2(d.getMonth()+1)}.${p2(d.getDate())}`; }
 function fmtTime(ts){ const d=new Date(ts); return `${p2(d.getHours())}:${p2(d.getMinutes())}`; }
+function fmtCNDateTime(ts){ const d=new Date(ts); return `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日 ${p2(d.getHours())}:${p2(d.getMinutes())}`; }
 function fmtWeek(ts){ return "周" + WEEK[new Date(ts).getDay()]; }
 function esc(s){ return String(s==null?"":s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
 function newId(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,9); }
-function tsToInput(ts){ const d=new Date(ts); return `${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}T${p2(d.getHours())}:${p2(d.getMinutes())}`; }
-function inputToTs(v){ const t = Date.parse(v); return isNaN(t) ? null : t; }
-function sortRecs(list){ return list.slice().sort((a,b)=> (b.date-a.date) || (b.createdAt-a.createdAt)); }
+function sortRecs(list){ return list.slice().sort((a,b)=> a.createdAt - b.createdAt); } /* 从旧到新 */
 function previewOf(c){ const t=String(c||"").replace(/\s+/g," ").trim(); return t.length>64 ? t.slice(0,64)+"…" : t; }
 function downloadFile(name, content, type){
   const blob = new Blob([content], {type: type + ";charset=utf-8"});
@@ -620,24 +604,27 @@ function downloadFile(name, content, type){
   setTimeout(()=>{ URL.revokeObjectURL(url); a.remove(); }, 1000);
 }
 
+/* 追加格式：严格按用户要求 */
+function appendStamp(text, ts){
+  return `\n\n【${fmtCNDateTime(ts)}】\n（自动记录日期时间）\n${text}`;
+}
+
 /* =========================================================
    本地存储：IndexedDB 为主 + localStorage 镜像兜底
-   （数据永远只在本机，不做任何网络请求）
 ========================================================= */
 const IDB_NAME = "quiet-timeline-diary";
 const IDB_STORE = "records";
-const MIRROR_KEY = "qtd-mirror-v1";
-const INIT_FLAG = "qtd-inited-v1";
-const TIP_FLAG  = "qtd-tip-v1";
+const MIRROR_KEY = "qtd-mirror-v2"; /* v2：追加式记录模型 */
+const INIT_FLAG = "qtd-inited-v2";
 let idb = null;
 
 function openIDB(){
   return new Promise((resolve, reject)=>{
     if(!window.indexedDB){ reject(new Error("no idb")); return; }
     let req;
-    try{ req = indexedDB.open(IDB_NAME, 1); }
+    try{ req = indexedDB.open(IDB_NAME, 2); }
     catch(e){ reject(e); return; }
-    req.onupgradeneeded = ()=>{
+    req.onupgradeneeded = (event)=>{
       const db = req.result;
       if(!db.objectStoreNames.contains(IDB_STORE)) db.createObjectStore(IDB_STORE, {keyPath:"id"});
     };
@@ -670,29 +657,44 @@ function readMirror(){ try{ const s = localStorage.getItem(MIRROR_KEY); return s
    应用状态
 ========================================================= */
 const state = {
-  records: [],          // 按 date 降序
+  records: [],          // 按 createdAt 升序（从旧到新）
   view: "home",
-  detailIndex: 0,
+  detailId: null,
   editingId: null,
-  editorFrom: "home",
-  homeScroll: 0,
 };
 const R = ()=> state.records;
 
 /* =========================================================
-   首次使用 · 欢迎记录
+   数据兼容：保留已有记录，首次创建时间不可变
+========================================================= */
+function normalizeRecord(r){
+  if(!r || typeof r !== "object") return null;
+  const created = Number(r.createdAt) || Number(r.date) || Date.now();
+  return {
+    id: String(r.id || newId()),
+    title: String(r.title || ""),
+    content: String(r.content || ""),
+    createdAt: created,
+    date: created,          // date 固定等于首次创建时间，不再变化
+  };
+}
+function upgradeData(list){
+  return list.map(normalizeRecord).filter(Boolean);
+}
+
+/* =========================================================
+   首次使用 · 欢迎记录（用追加模型）
 ========================================================= */
 function welcomeRecords(){
   const now = Date.now();
-  const t1 = now - 2*60*1000;
   const t2 = now - 3*24*60*60*1000 - 37*60*1000;
   return [
     { id:newId(), title:"欢迎来到我的记录",
-      content:"这是一个只属于你的安静空间。\n\n所有记录都只保存在这台手机上，不上传，不同步，也不需要网络。\n\n打开一篇记录后，可以用手指左右滑动，慢慢翻阅前后的日子。\n\n这篇欢迎记录，可以随时删除。",
-      date:t1, createdAt:t1, updatedAt:t1 },
-    { id:newId(), title:"今天去了很远的地方",
-      content:"有时候记录下来以后，才发现自己其实已经走了很远。\n\n慢慢写，慢慢翻。时间会在这里安静地生长。",
-      date:t2, createdAt:t2, updatedAt:t2 },
+      content:"这是一个只属于你的安静空间。\n\n所有记录都只保存在这台手机上，不上传，不同步，也不需要网络。\n\n点击一篇记录可以查看完整内容；点击\"继续记录\"可以在原有内容之后追加新的文字。\n\n这篇欢迎记录，可以随时删除。",
+      createdAt:t2, date:t2 },
+    { id:newId(), title:"今天开始使用这个工具",
+      content:"这是你的第二篇记录。\n\n每次编辑时，原来的内容都会保留，新的文字会按时间顺序追加在后面。",
+      createdAt:now, date:now },
   ];
 }
 
@@ -709,219 +711,127 @@ function showView(name, anim){
 }
 
 /* =========================================================
-   首页渲染
+   首页渲染：记录列表（从旧到新）
 ========================================================= */
 function renderHome(){
   const list = R();
-  $("#folder-sub").textContent = list.length
-    ? `${list.length} 篇记录 · ${fmtMD(list[list.length-1].date)} — ${fmtMD(list[0].date)}`
-    : "一个安静的记录空间";
-  const tl = $("#timeline");
-  tl.innerHTML = list.map((r,i)=>`
-    <div class="tl-item" data-id="${esc(r.id)}">
-      <div class="tl-rail"><span class="tl-dot"></span></div>
-      <article class="tl-card" data-id="${esc(r.id)}">
-        <div class="tl-meta">${fmtDate(r.date)} · ${fmtWeek(r.date)}　${fmtTime(r.date)}</div>
-        <h2 class="tl-title">${esc(r.title || "未命名记录")}</h2>
-        <p class="tl-preview">${esc(previewOf(r.content))}</p>
+  $("#cat-count").textContent = `${list.length} 篇记录`;
+  const nl = $("#note-list");
+  nl.innerHTML = list.map((r,i)=>`
+    <div class="note-item" data-id="${esc(r.id)}">
+      <div class="note-rail"><span class="note-dot"></span></div>
+      <article class="note-card" data-id="${esc(r.id)}">
+        <div class="note-created">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5.5" width="16" height="15" rx="2.5"/><path d="M8 3.5v4M16 3.5v4M4 10.5h16"/></svg>
+          ${fmtCNDate(r.createdAt)} · ${fmtWeek(r.createdAt)}　${fmtTime(r.createdAt)}
+        </div>
+        <h2 class="note-title">${esc(r.title || "未命名记录")}</h2>
+        <p class="note-preview">${esc(previewOf(r.content))}</p>
       </article>
     </div>`).join("");
   $("#empty-state").hidden = list.length > 0;
-  tl.style.display = list.length ? "" : "none";
+  nl.style.display = list.length ? "" : "none";
   renderSettings();
 }
 function showHome(keepScroll){
   renderHome();
-  showView("home", "vin-l");
-  const sc = $("#home-scroll");
-  requestAnimationFrame(()=>{ sc.scrollTop = keepScroll ? state.homeScroll : 0; });
+  showView("home", keepScroll ? undefined : "vin-l");
+  if(keepScroll){
+    const sc = $("#home-scroll");
+    requestAnimationFrame(()=>{ sc.scrollTop = state.homeScroll || 0; });
+  }
 }
 function locateRecord(id){
-  const item = document.querySelector(`.tl-item[data-id="${id}"]`);
+  const item = document.querySelector(`.note-item[data-id="${id}"]`);
   if(!item) return;
   item.scrollIntoView({behavior:"smooth", block:"center"});
-  const card = item.querySelector(".tl-card");
+  const card = item.querySelector(".note-card");
   card.classList.add("flash");
   setTimeout(()=> card.classList.remove("flash"), 1400);
 }
 
 /* =========================================================
-   详情 · 时间轴翻阅
+   详情页：只读历史展示
 ========================================================= */
-const pagerEl = $("#pager");
-const sPrev = $("#slide-prev"), sCur = $("#slide-cur"), sNext = $("#slide-next");
-let animating = false;
-let drag = null;
-
-function slideHTML(r){
-  if(!r) return "";
-  return `
-  <article class="diary-card">
-    <div class="diary-meta">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5.5" width="16" height="15" rx="2.5"/><path d="M8 3.5v4M16 3.5v4M4 10.5h16"/></svg>
-      ${fmtDate(r.date)} · ${fmtWeek(r.date)}　${fmtTime(r.date)}
-    </div>
-    <h1 class="diary-title">${esc(r.title || "未命名记录")}</h1>
-    <div class="diary-body">${esc(r.content)}</div>
-    <div class="diary-end"><i></i><i></i></div>
-  </article>`;
-}
-function setTrack(dx){
-  sPrev.style.transform = `translateX(calc(-100% + ${dx}px))`;
-  sCur.style.transform  = `translateX(${dx}px)`;
-  sNext.style.transform = `translateX(calc(100% + ${dx}px))`;
-}
-function renderPager(){
-  const i = state.detailIndex, list = R();
-  sPrev.innerHTML = slideHTML(list[i-1]);
-  sCur.innerHTML  = slideHTML(list[i]);
-  sNext.innerHTML = slideHTML(list[i+1]);
-  [sPrev,sCur,sNext].forEach(s=> s.scrollTop = 0);
-  setTrack(0);
-}
-function updateDetailHeader(){
-  const list = R(), i = state.detailIndex, r = list[i];
-  $("#detail-meta").textContent = r ? `${fmtDate(r.date)} · ${fmtTime(r.date)}` : "";
-  $("#pg-pos").textContent = `${i+1} / ${list.length}`;
-  $("#pg-prev").disabled = i <= 0;
-  $("#pg-next").disabled = i >= list.length - 1;
-}
-function openDetail(i){
-  if(i<0 || i>=R().length) return;
-  state.detailIndex = i;
-  renderPager(); updateDetailHeader();
+function openDetail(id){
+  const r = R().find(x=>x.id===id);
+  if(!r) return;
+  state.detailId = id;
+  $("#detail-created-text").textContent = `${fmtCNDate(r.createdAt)} · ${fmtWeek(r.createdAt)}　${fmtTime(r.createdAt)}`;
+  $("#detail-title").textContent = r.title || "未命名记录";
+  $("#detail-content").textContent = r.content;
   showView("detail","vin-r");
-  if(!localStorage.getItem(TIP_FLAG)){
-    localStorage.setItem(TIP_FLAG,"1");
-    setTimeout(()=> toast("左右滑动，可以翻阅前后记录"), 650);
-  }
 }
-function springBack(){
-  pagerEl.classList.add("anim");
-  setTrack(0);
-  let done = false;
-  const fin = ()=>{ if(done) return; done = true; pagerEl.classList.remove("anim"); };
-  pagerEl.addEventListener("transitionend", fin, {once:true});
-  setTimeout(fin, 420);
-}
-function go(dir){
-  if(animating) return;
-  const target = state.detailIndex + dir;
-  const list = R();
-  if(target < 0 || target >= list.length){ springBack(); return; }
-  animating = true;
-  pagerEl.classList.add("anim");
-  setTrack(-dir * pagerEl.clientWidth);   /* dir=1：翻下一篇，轨道左移 */
-  state.detailIndex = target;
-  updateDetailHeader();
-  let done = false;
-  const fin = ()=>{
-    if(done) return; done = true;
-    pagerEl.classList.remove("anim");
-    renderPager();
-    animating = false;
-  };
-  pagerEl.addEventListener("transitionend", fin, {once:true});
-  setTimeout(fin, 460);
-}
-const hasPrev = ()=> state.detailIndex > 0;
-const hasNext = ()=> state.detailIndex < R().length - 1;
-
-/* ---- 触摸手势（水平翻页 / 垂直交给滚动） ---- */
-function startDrag(x, y){
-  if(animating || state.view !== "detail") return;
-  drag = {x0:x, y0:y, dx:0, locked:null, t0:Date.now()};
-}
-function moveDrag(x, y){
-  if(!drag) return;
-  const dx = x - drag.x0, dy = y - drag.y0;
-  if(drag.locked === null){
-    if(Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
-    drag.locked = Math.abs(dx) > Math.abs(dy) ? "x" : "y";
-  }
-  if(drag.locked !== "x") return;
-  drag.dx = dx;
-  let d = dx;
-  if((dx < 0 && !hasNext()) || (dx > 0 && !hasPrev())) d = dx * 0.32;  /* 边界阻尼 */
-  setTrack(d);
-}
-function endDrag(){
-  if(!drag) return;
-  const {dx, locked} = drag;
-  drag = null;
-  if(locked !== "x") return;
-  const W = pagerEl.clientWidth;
-  const th = Math.min(90, W * 0.22);
-  if(dx <= -th) go(1);
-  else if(dx >= th) go(-1);
-  else springBack();
-}
-pagerEl.addEventListener("touchstart", e=>{ if(e.touches.length===1) startDrag(e.touches[0].clientX, e.touches[0].clientY); }, {passive:true});
-pagerEl.addEventListener("touchmove", e=>{
-  if(!drag || e.touches.length!==1) return;
-  moveDrag(e.touches[0].clientX, e.touches[0].clientY);
-  if(drag && drag.locked === "x") e.preventDefault();
-}, {passive:false});
-pagerEl.addEventListener("touchend", endDrag, {passive:true});
-pagerEl.addEventListener("touchcancel", endDrag, {passive:true});
-/* ---- 桌面：鼠标拖拽 ---- */
-pagerEl.addEventListener("mousedown", e=>{ if(e.button===0){ startDrag(e.clientX, e.clientY); e.preventDefault(); } });
-window.addEventListener("mousemove", e=>{ if(drag) moveDrag(e.clientX, e.clientY); });
-window.addEventListener("mouseup", endDrag);
-/* ---- 桌面：键盘 ---- */
-document.addEventListener("keydown", e=>{
-  if(state.view !== "detail") return;
-  if(e.key === "ArrowRight") go(1);
-  else if(e.key === "ArrowLeft") go(-1);
-  else if(e.key === "Escape") showHome(true);
-});
 
 /* =========================================================
-   编辑：新建 / 修改
+   编辑页：新建 / 追加
 ========================================================= */
-function openEditor(id, from){
+function openEditor(id){
   state.editingId = id || null;
-  state.editorFrom = from || "home";
   const r = id ? R().find(x=>x.id===id) : null;
-  $("#edit-date").value = tsToInput(r ? r.date : Date.now());
+  $("#edit-title-label").textContent = r ? "继续记录" : "新建记录";
+  $("#edit-created").textContent = r ? fmtCNDateTime(r.createdAt) : fmtCNDateTime(Date.now());
   $("#edit-title").value = r ? (r.title||"") : "";
-  $("#edit-content").value = r ? (r.content||"") : "";
-  $("#edit-title-label").textContent = r ? "编辑记录" : "新建记录";
+
+  if(r){
+    /* 编辑已有：显示只读历史 + 新增输入框 */
+    $("#edit-history-box").hidden = false;
+    $("#edit-history").textContent = r.content;
+    $("#edit-content").value = "";
+    $("#edit-new-label-text").textContent = "本次新增内容";
+    $("#edit-content").placeholder = "在这里写下这次要追加的内容……";
+  }else{
+    /* 新建：隐藏历史区，正文输入即首篇内容 */
+    $("#edit-history-box").hidden = true;
+    $("#edit-history").textContent = "";
+    $("#edit-content").value = "";
+    $("#edit-new-label-text").textContent = "在这里写下第一篇……";
+    $("#edit-content").placeholder = "写下你的第一篇记录……";
+  }
   showView("edit","vin-u");
 }
-async function saveEditor(){
+
+function saveEditor(){
   const title = $("#edit-title").value.trim();
-  const content = $("#edit-content").value;
-  if(!title && !content.trim()){ toast("写一点什么，再保存吧"); return; }
-  const date = inputToTs($("#edit-date").value) || Date.now();
+  const added = $("#edit-content").value;
+  if(!title && !added.trim()){ toast("写一点什么，再保存吧"); return; }
+
   const now = Date.now();
-  let savedId;
   if(state.editingId){
+    /* 追加式保存 */
     const r = R().find(x=>x.id===state.editingId);
-    if(r){ r.title=title; r.content=content; r.date=date; r.updatedAt=now; savedId=r.id; idbPut(r); }
+    if(!r) return;
+    if(!added.trim()){ toast("本次还没有新增内容"); return; }
+    r.title = title;  /* 标题可直接修改，不属于历史正文 */
+    r.content = r.content + appendStamp(added, now);
+    idbPut(r);
+    toast("已追加保存");
   }else{
-    const rec = {id:newId(), title, content, date, createdAt:now, updatedAt:now};
-    savedId = rec.id;
+    /* 新建 */
+    if(!added.trim()){ toast("写一点什么，再保存吧"); return; }
+    const rec = {id:newId(), title, content:added, createdAt:now, date:now};
     state.records.push(rec);
     idbPut(rec);
+    toast("已保存");
   }
   state.records = sortRecs(state.records);
   writeMirror(state.records);
-  toast("已保存");
-  if(state.editorFrom === "detail" && savedId){
-    renderHome();
-    openDetail(R().findIndex(x=>x.id===savedId));
+  showHome(false);
+  if(state.editingId){
+    setTimeout(()=> locateRecord(state.editingId), 350);
+    state.editingId = null;
   }else{
-    showHome(false);
-    setTimeout(()=> locateRecord(savedId), 350);
+    const newest = R()[R().length-1];
+    if(newest) setTimeout(()=> locateRecord(newest.id), 350);
   }
 }
+
 function askDelete(id){
   const r = R().find(x=>x.id===id);
   if(!r) return;
   showModal({
     title: "删除这一篇？",
-    body: "删除后无法恢复，\n这篇记录会从时间里消失。",
+    body: "删除后无法恢复，\n这篇记录会从列表里消失。",
     buttons: [
       {text:"再想想", cls:"mbtn-ghost"},
       {text:"删除", cls:"mbtn-danger", onClick: async ()=>{
@@ -943,16 +853,16 @@ function renderSettings(){
   const list = R();
   $("#stat-count").textContent = list.length;
   $("#stat-span").textContent = list.length
-    ? `${fmtDate(list[list.length-1].date)} — ${fmtDate(list[0].date)}` : "";
+    ? `${fmtDate(list[0].createdAt)} — ${fmtDate(list[list.length-1].createdAt)}` : "";
 }
 function exportJSON(){
   const list = R();
   if(!list.length){ toast("还没有记录可以导出"); return; }
   const data = {
     app: "quiet-timeline-diary",
-    version: 1,
+    version: 2,
     exportedAt: new Date().toISOString(),
-    records: list.slice().reverse().map(r=>({id:r.id, title:r.title||"", content:r.content||"", date:r.date, createdAt:r.createdAt, updatedAt:r.updatedAt})),
+    records: list.map(r=>({id:r.id, title:r.title||"", content:r.content||"", createdAt:r.createdAt, date:r.createdAt})),
   };
   downloadFile(`我的记录-备份-${fmtDate(Date.now())}.json`, JSON.stringify(data, null, 2), "application/json");
   toast("已导出 JSON 备份");
@@ -962,10 +872,10 @@ function exportMD(){
   if(!list.length){ toast("还没有记录可以导出"); return; }
   const parts = [
     "# 我的记录\n",
-    `> 共 ${list.length} 篇 · 导出于 ${fmtDate(Date.now())} ${fmtTime(Date.now())}\n`,
+    `> 共 ${list.length} 篇 · 导出于 ${fmtCNDate(Date.now())} ${fmtTime(Date.now())}\n`,
   ];
-  list.slice().reverse().forEach(r=>{
-    parts.push(`---\n\n## ${fmtDate(r.date)} ${fmtWeek(r.date)} · ${fmtTime(r.date)}`);
+  list.forEach(r=>{
+    parts.push(`---\n\n## ${fmtCNDate(r.createdAt)} ${fmtWeek(r.createdAt)} · ${fmtTime(r.createdAt)}`);
     parts.push(r.title ? `\n### ${r.title||"未命名记录"}\n` : "\n");
     parts.push(`${r.content||""}\n`);
   });
@@ -975,30 +885,13 @@ function exportMD(){
 function normalizeImported(raw){
   const list = Array.isArray(raw) ? raw : (raw && Array.isArray(raw.records) ? raw.records : null);
   if(!list) return null;
-  const out = [];
-  for(const it of list){
-    if(!it || typeof it !== "object") continue;
-    let d = Number(it.date);
-    if(!isFinite(d) || d <= 0){
-      const alt = Number(it.createdAt);
-      d = (isFinite(alt) && alt > 0) ? alt : Date.now();
-    }
-    out.push({
-      id: String(it.id || newId()),
-      title: String(it.title || ""),
-      content: String(it.content || ""),
-      date: d,
-      createdAt: Number(it.createdAt) || d,
-      updatedAt: Number(it.updatedAt) || d,
-    });
-  }
-  return out;
+  return list.map(r=>normalizeRecord(r)).filter(Boolean);
 }
 function handleImport(raw){
   const backup = normalizeImported(raw);
   if(!backup || !backup.length){ toast("这个文件里没有可用的记录"); return; }
   const local = R();
-  const keyOf = r => `${r.date}|${r.title}|${r.content}`;
+  const keyOf = r => `${r.createdAt}|${r.title}|${r.content}`;
   const localKeys = new Set(local.map(keyOf));
   const localIds = new Set(local.map(r=>r.id));
   const same = backup.filter(r=>localKeys.has(keyOf(r))).length;
@@ -1058,41 +951,6 @@ $("#import-file").addEventListener("change", e=>{
 });
 
 /* =========================================================
-   时间轴导航 Sheet
-========================================================= */
-function renderTlNav(){
-  const groups = {};
-  for(const r of R()){
-    const y = new Date(r.date).getFullYear();
-    (groups[y] = groups[y] || []).push(r);
-  }
-  const years = Object.keys(groups).sort((a,b)=> b-a);
-  const body = $("#sheet-body");
-  if(!years.length){
-    body.innerHTML = `<div class="sheet-empty">时间轴还没有内容</div>`;
-    return;
-  }
-  body.innerHTML = years.map(y=>`
-    <div class="tl-nav-group">
-      <div class="tl-nav-year">${y}</div>
-      ${groups[y].map(r=>`
-        <button class="tl-nav-item" data-id="${esc(r.id)}">
-          <span class="tl-nav-date">${fmtMD(r.date)}</span>
-          <span class="tl-nav-title">${esc(r.title || "未命名记录")}</span>
-        </button>`).join("")}
-    </div>`).join("");
-}
-function openSheet(){
-  renderTlNav();
-  $("#overlay").classList.add("open");
-  $("#sheet-tlnav").classList.add("open");
-}
-function closeSheet(){
-  $("#overlay").classList.remove("open");
-  $("#sheet-tlnav").classList.remove("open");
-}
-
-/* =========================================================
    模态框 / Toast
 ========================================================= */
 let toastTimer = null;
@@ -1126,39 +984,29 @@ $("#modal-mask").addEventListener("click", e=>{ if(e.target === e.currentTarget)
 /* =========================================================
    事件绑定
 ========================================================= */
-$("#btn-new").addEventListener("click", ()=> openEditor(null, "home"));
-$("#btn-new-empty").addEventListener("click", ()=> openEditor(null, "home"));
-$("#timeline").addEventListener("click", e=>{
-  const item = e.target.closest(".tl-item");
+$("#btn-new").addEventListener("click", ()=> openEditor(null));
+$("#btn-new-empty").addEventListener("click", ()=> openEditor(null));
+$("#home-title").addEventListener("click", ()=>{ $("#home-scroll").scrollTo({top:0,behavior:"smooth"}); });
+$("#note-list").addEventListener("click", e=>{
+  const item = e.target.closest(".note-item");
   if(!item) return;
-  const i = R().findIndex(r=>r.id === item.dataset.id);
-  if(i >= 0){ state.homeScroll = $("#home-scroll").scrollTop; openDetail(i); }
+  state.homeScroll = $("#home-scroll").scrollTop;
+  openDetail(item.dataset.id);
 });
 $("#btn-back").addEventListener("click", ()=> showHome(true));
-$("#pg-prev").addEventListener("click", ()=> go(-1));
-$("#pg-next").addEventListener("click", ()=> go(1));
-$("#btn-edit").addEventListener("click", ()=>{
-  const r = R()[state.detailIndex];
-  if(r) openEditor(r.id, "detail");
-});
-$("#btn-del").addEventListener("click", ()=>{
-  const r = R()[state.detailIndex];
-  if(r) askDelete(r.id);
-});
+$("#btn-detail-edit").addEventListener("click", ()=>{ if(state.detailId) openEditor(state.detailId); });
+$("#btn-edit").addEventListener("click", ()=>{ if(state.detailId) openEditor(state.detailId); });
+$("#btn-detail-del").addEventListener("click", ()=>{ if(state.detailId) askDelete(state.detailId); });
 $("#edit-back").addEventListener("click", ()=>{
   const t = $("#edit-title").value, c = $("#edit-content").value;
   if(t.trim() || c.trim()){
-    showModal({ title:"放弃这篇？", body:"还没有保存，离开后这次修改会消失。",
+    showModal({ title:"放弃这次编辑？", body:"还没有保存，离开后这次输入会消失。",
       buttons:[
         {text:"继续编辑", cls:"mbtn-ghost"},
-        {text:"放弃", cls:"mbtn-danger", onClick: ()=>{
-          if(state.editorFrom === "detail"){ renderPager(); showView("detail","vin-l"); }
-          else showHome(true);
-        }},
+        {text:"放弃", cls:"mbtn-danger", onClick: ()=>{ state.editingId=null; showHome(true); }},
       ]});
   }else{
-    if(state.editorFrom === "detail"){ renderPager(); showView("detail","vin-l"); }
-    else showHome(true);
+    state.editingId=null; showHome(true);
   }
 });
 $("#edit-cancel").addEventListener("click", ()=> $("#edit-back").click());
@@ -1168,15 +1016,6 @@ $("#settings-back").addEventListener("click", ()=> showHome(true));
 $("#btn-export-json").addEventListener("click", exportJSON);
 $("#btn-export-md").addEventListener("click", exportMD);
 $("#btn-import").addEventListener("click", ()=> $("#import-file").click());
-$("#btn-tlnav").addEventListener("click", openSheet);
-$("#sheet-close").addEventListener("click", closeSheet);
-$("#overlay").addEventListener("click", closeSheet);
-$("#sheet-body").addEventListener("click", e=>{
-  const item = e.target.closest(".tl-nav-item");
-  if(!item) return;
-  closeSheet();
-  setTimeout(()=> locateRecord(item.dataset.id), 220);
-});
 
 /* =========================================================
    初始化
@@ -1186,7 +1025,6 @@ $("#sheet-body").addEventListener("click", e=>{
   let recs = null;
   if(idb) recs = await idbAll();
   if(!recs || !recs.length){
-    /* IndexedDB 不可用或为空时，尝试从 localStorage 镜像恢复 */
     const mirror = readMirror();
     if(mirror && mirror.length){
       recs = mirror;
@@ -1197,7 +1035,7 @@ $("#sheet-body").addEventListener("click", e=>{
       try{ localStorage.setItem(INIT_FLAG, "1"); }catch(e){}
     }
   }
-  state.records = sortRecs(recs || []);
+  state.records = sortRecs(upgradeData(recs || []));
   writeMirror(state.records);
   renderHome();
   showView("home", "vin-u");
