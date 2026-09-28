@@ -415,6 +415,14 @@ input,textarea{font:inherit;color:var(--ink)}
   text-align:center;color:var(--ink-2);padding:40px 16px;
   font-size:13.5px;line-height:1.9;
 }
+.sidebar-new-folder{
+  width:100%;height:46px;border-radius:14px;margin-top:8px;
+  display:flex;align-items:center;justify-content:center;gap:6px;
+  background:var(--green-soft);color:var(--green-ink);
+  font-size:14px;font-weight:600;letter-spacing:.5px;
+  transition:background .2s,transform .15s;
+}
+.sidebar-new-folder:active{background:#CFE7DB;transform:scale(.98)}
 
 /* ================= 模态框 / Toast ================= */
 .modal-mask{
@@ -526,6 +534,63 @@ input,textarea{font:inherit;color:var(--ink)}
         <div class="empty-title">还没有记录</div>
         <div class="empty-sub">轻轻写下第一篇，<br>时间会在这里慢慢生长。</div>
         <button class="btn-new" id="btn-new-empty">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          写下第一篇
+        </button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 文件夹视图 ============ -->
+<section id="view-folder" class="view">
+  <header class="topbar">
+    <button class="btn-back" id="folder-btn-back" aria-label="返回">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12H5"/><path d="M11 18l-6-6 6-6"/></svg>
+      返回
+    </button>
+    <div class="topbar-spacer"></div>
+    <button class="icon-btn" id="folder-btn-settings" aria-label="设置" title="设置">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8h8.5M17.5 8h1.5M5 16h2.5M11.5 16H19"/><circle cx="15" cy="8" r="2.2"/><circle cx="9" cy="16" r="2.2"/></svg>
+    </button>
+  </header>
+  <div class="scroll-area" id="folder-scroll">
+    <div class="home-body">
+      <div class="section-title">
+        <div class="folder-icon-small">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 7.5A1.5 1.5 0 015 6h4.2l1.8 2H19a1.5 1.5 0 011.5 1.5v8A1.5 1.5 0 0119 19H5a1.5 1.5 0 01-1.5-1.5v-10z"/></svg>
+        </div>
+        <span id="folder-title-text">文件夹</span>
+      </div>
+
+      <div class="category-card">
+        <div class="cat-item" id="folder-cat">
+          <div class="cat-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+          </div>
+          <div class="cat-text">
+            <div class="cat-name">文件夹</div>
+            <div class="cat-count" id="folder-count">0 篇记录</div>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn-new" id="folder-btn-new">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        新建记录
+      </button>
+
+      <div class="note-list" id="folder-note-list"></div>
+      <div class="carousel-dots" id="folder-carousel-dots"></div>
+
+      <div class="empty-state" id="folder-empty-state" hidden>
+        <svg width="52" height="52" viewBox="0 0 100 100" fill="none">
+          <path d="M20 92C20 46 46 20 92 18c2 46-22 72-66 74z" stroke="#86B8A2" stroke-width="2.4"/>
+          <path d="M22 90C40 60 60 40 88 22" stroke="#86B8A2" stroke-width="1.8"/>
+        </svg>
+        <div class="empty-title">还没有文件</div>
+        <div class="empty-sub">先写下第一篇记录吧</div>
+        <button class="btn-new" id="folder-btn-new-empty">
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
           写下第一篇
         </button>
@@ -742,8 +807,8 @@ function appendStamp(text, ts){
 ========================================================= */
 const IDB_NAME = "quiet-timeline-diary";
 const IDB_STORE = "records";
-const MIRROR_KEY = "qtd-mirror-v2"; /* v2：追加式记录模型 */
-const INIT_FLAG = "qtd-inited-v2";
+const MIRROR_KEY = "qtd-mirror-v3"; /* v3：含 folders 与 records */
+const INIT_FLAG = "qtd-inited-v3";
 let idb = null;
 
 function openIDB(){
@@ -778,24 +843,51 @@ function idbClear(){ return new Promise(r=>{ try{
   const tx = idb.transaction(IDB_STORE,"readwrite");
   tx.objectStore(IDB_STORE).clear(); tx.oncomplete = r; tx.onerror = r;
 }catch(e){ r(); } }); }
-function writeMirror(list){ try{ localStorage.setItem(MIRROR_KEY, JSON.stringify(list)); }catch(e){} }
-function readMirror(){ try{ const s = localStorage.getItem(MIRROR_KEY); return s ? JSON.parse(s) : null; }catch(e){ return null; } }
+function writeMirror(records, folders){
+  try{
+    const data = { folders: folders || state.folders, records: records || state.records };
+    localStorage.setItem(MIRROR_KEY, JSON.stringify(data));
+  }catch(e){}
+}
+function readMirror(){
+  try{
+    const s = localStorage.getItem(MIRROR_KEY);
+    if(!s) return null;
+    const d = JSON.parse(s);
+    if(Array.isArray(d)){ return { folders: null, records: d }; }  // 旧版 v2 镜像
+    if(d && Array.isArray(d.records)) return { folders: d.folders || null, records: d.records };
+  }catch(e){}
+  return null;
+}
+function writeFolders(folders){
+  try{
+    const current = JSON.parse(localStorage.getItem(MIRROR_KEY) || '{}');
+    localStorage.setItem(MIRROR_KEY, JSON.stringify({ ...current, folders }));
+  }catch(e){}
+}
 
 /* =========================================================
    应用状态
 ========================================================= */
 const state = {
   records: [],          // 按 createdAt 升序（从旧到新）
+  folders: [],          // 文件夹列表
   view: "home",
+  previousView: null,   // 用于详情/编辑返回
+  currentFolderId: null,
   detailId: null,
   editingId: null,
+  returnTo: { view: "home", folderId: null }, // 编辑完成后返回哪里
 };
 const R = ()=> state.records;
+const F = ()=> state.folders;
+const getFolder = id => state.folders.find(f=>f.id===id);
+const recordsInFolder = id => state.records.filter(r=>r.folderId===id);
 
 /* =========================================================
    数据兼容：保留已有记录，首次创建时间不可变
 ========================================================= */
-function normalizeRecord(r){
+function normalizeRecord(r, defaultFolderId){
   if(!r || typeof r !== "object") return null;
   const created = Number(r.createdAt) || Number(r.date) || Date.now();
   return {
@@ -804,6 +896,16 @@ function normalizeRecord(r){
     content: String(r.content || ""),
     createdAt: created,
     date: created,          // date 固定等于首次创建时间，不再变化
+    folderId: String(r.folderId || defaultFolderId || "default"),
+  };
+}
+function normalizeFolder(f){
+  if(!f || typeof f !== "object") return null;
+  const created = Number(f.createdAt) || Date.now();
+  return {
+    id: String(f.id || newId()),
+    name: String(f.name || "未命名文件夹"),
+    createdAt: created,
   };
 }
 function upgradeData(list){
@@ -819,23 +921,30 @@ function welcomeRecords(){
   return [
     { id:newId(), title:"欢迎来到我的记录",
       content:"这是一个只属于你的安静空间。\n\n所有记录都只保存在这台手机上，不上传，不同步，也不需要网络。\n\n点击一篇记录可以查看完整内容；点击\"继续记录\"可以在原有内容之后追加新的文字。\n\n这篇欢迎记录，可以随时删除。",
-      createdAt:t2, date:t2 },
+      createdAt:t2, date:t2, folderId:"default" },
     { id:newId(), title:"今天开始使用这个工具",
       content:"这是你的第二篇记录。\n\n每次编辑时，原来的内容都会保留，新的文字会按时间顺序追加在后面。",
-      createdAt:now, date:now },
+      createdAt:now, date:now, folderId:"default" },
   ];
 }
 
 /* =========================================================
    视图切换
 ========================================================= */
-const VIEWS = ["home","detail","edit","settings"];
+const VIEWS = ["home","folder","detail","edit","settings"];
 function showView(name, anim){
+  state.previousView = state.view;
   state.view = name;
   VIEWS.forEach(v=> $("#view-"+v).classList.remove("active","vin-r","vin-l","vin-u"));
   const el = $("#view-"+name);
+  if(!el) return;
   el.classList.add("active");
   if(anim){ void el.offsetWidth; el.classList.add(anim); }
+}
+function showFolder(id){
+  state.currentFolderId = id || "default";
+  renderFolder(state.currentFolderId);
+  showView("folder", "vin-r");
 }
 
 /* =========================================================
@@ -869,24 +978,111 @@ function renderHome(){
   updateCarouselDots();
   renderSidebar();
 }
+function renderFolder(folderId){
+  const folder = getFolder(folderId);
+  const list = recordsInFolder(folderId);
+  $("#folder-title-text").textContent = folder ? folder.name : "文件夹";
+  $("#folder-count").textContent = `${list.length} 篇记录`;
+  const nl = $("#folder-note-list");
+  const dots = $("#folder-carousel-dots");
+  nl.innerHTML = list.map((r,i)=>`
+    <div class="note-item" data-id="${esc(r.id)}" data-index="${i}">
+      <article class="note-card" data-id="${esc(r.id)}">
+        <div class="note-created">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5.5" width="16" height="15" rx="2.5"/><path d="M8 3.5v4M16 3.5v4M4 10.5h16"/></svg>
+          ${fmtCNDate(r.createdAt)} · ${fmtWeek(r.createdAt)}　${fmtTime(r.createdAt)}
+        </div>
+        <div class="note-card-header">
+          <h2 class="note-title">${esc(r.title || "未命名记录")}</h2>
+          <button class="btn-rename" data-id="${esc(r.id)}" data-action="rename" aria-label="修改名称">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l1-4L16.5 4.5a2.05 2.05 0 013 0 2.05 2.05 0 010 3L8 19l-4 1z"/></svg>
+          </button>
+        </div>
+        <p class="note-preview">${esc(previewOf(r.content))}</p>
+      </article>
+    </div>`).join("");
+  dots.innerHTML = list.map((_,i)=>`<span class="dot ${i===0?"active":""}" data-index="${i}"></span>`).join("");
+  $("#folder-empty-state").hidden = list.length > 0;
+  nl.style.display = list.length ? "" : "none";
+  updateFolderCarouselDots();
+}
+function updateFolderCarouselDots(){
+  const nl = $("#folder-note-list");
+  if(!nl || !nl.children.length) return;
+  const n = nl.children.length;
+  const page = nl.scrollWidth / n;
+  const idx = Math.min(n-1, Math.max(0, Math.round(nl.scrollLeft / page)));
+  document.querySelectorAll("#folder-carousel-dots .dot").forEach((d,i)=> d.classList.toggle("active", i===idx));
+}
 function renderSidebar(){
-  const list = R();
   const container = $("#sidebar-list");
   if(!container) return;
-  if(!list.length){
-    container.innerHTML = `<div class="sidebar-empty">还没有文件<br>先写下第一篇记录吧</div>`;
+  const folders = F();
+  if(!folders.length){
+    container.innerHTML = `<div class="sidebar-empty">还没有文件夹</div>`;
     return;
   }
-  container.innerHTML = list.map(r=>`
-    <div class="sidebar-item" data-id="${esc(r.id)}">
+  container.innerHTML = folders.map(f=>{
+    const count = recordsInFolder(f.id).length;
+    return `
+    <div class="sidebar-item" data-id="${esc(f.id)}">
       <div class="sidebar-item-main">
-        <div class="sidebar-item-title">${esc(r.title || "未命名记录")}</div>
-        <div class="sidebar-item-meta">${fmtCNDate(r.createdAt)} · ${fmtWeek(r.createdAt)}</div>
+        <div class="sidebar-item-title">${esc(f.name || "未命名文件夹")}</div>
+        <div class="sidebar-item-meta">${count} 篇记录</div>
       </div>
-      <button class="btn-rename" data-id="${esc(r.id)}" data-action="rename" aria-label="修改名称">
+      <button class="btn-rename" data-id="${esc(f.id)}" data-action="rename-folder" aria-label="修改文件夹名称">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l1-4L16.5 4.5a2.05 2.05 0 013 0 2.05 2.05 0 010 3L8 19l-4 1z"/></svg>
       </button>
-    </div>`).join("");
+    </div>`;
+  }).join("") + `<button class="sidebar-new-folder" id="sidebar-new-folder">+ 新建文件夹</button>`;
+}
+function renameFolder(id){
+  const f = getFolder(id);
+  if(!f) return;
+  showModal({
+    title: "修改文件夹名称",
+    body: "",
+    buttons: [
+      {text:"取消", cls:"mbtn-ghost"},
+      {text:"保存", cls:"mbtn-main", onClick: ()=>{
+        const input = $("#rename-input");
+        if(input){
+          f.name = input.value.trim() || f.name;
+          writeFolders(state.folders);
+          renderSidebar();
+          if(state.view === "folder" && state.currentFolderId === id){
+            $("#folder-title-text").textContent = f.name;
+          }
+          toast("已修改名称");
+        }
+      }},
+    ],
+  });
+  const body = $("#modal-body");
+  body.innerHTML = `<input id="rename-input" type="text" maxlength="60" value="${esc(f.name)}" placeholder="文件夹名称" style="width:100%;padding:12px 14px;border:0;border-radius:12px;background:var(--green-soft);font-size:15px;color:var(--ink);outline:none;">`;
+  requestAnimationFrame(()=>{ const inp=$("#rename-input"); if(inp) inp.focus(); });
+}
+function createFolder(){
+  showModal({
+    title: "新建文件夹",
+    body: "",
+    buttons: [
+      {text:"取消", cls:"mbtn-ghost"},
+      {text:"创建", cls:"mbtn-main", onClick: ()=>{
+        const input = $("#rename-input");
+        if(input && input.value.trim()){
+          const f = { id: newId(), name: input.value.trim(), createdAt: Date.now() };
+          state.folders.push(f);
+          writeFolders(state.folders);
+          renderSidebar();
+          toast("已创建文件夹");
+        }
+      }},
+    ],
+  });
+  const body = $("#modal-body");
+  body.innerHTML = `<input id="rename-input" type="text" maxlength="60" value="新文件夹" placeholder="文件夹名称" style="width:100%;padding:12px 14px;border:0;border-radius:12px;background:var(--green-soft);font-size:15px;color:var(--ink);outline:none;">`;
+  requestAnimationFrame(()=>{ const inp=$("#rename-input"); if(inp){ inp.focus(); inp.select(); } });
 }
 function openSidebar(){
   $("#sidebar-mask").classList.add("open");
@@ -903,10 +1099,10 @@ function updateCarouselDots(){
   const n = nl.children.length;
   const page = nl.scrollWidth / n;
   const idx = Math.min(n-1, Math.max(0, Math.round(nl.scrollLeft / page)));
-  document.querySelectorAll(".dot").forEach((d,i)=> d.classList.toggle("active", i===idx));
+  document.querySelectorAll("#carousel-dots .dot").forEach((d,i)=> d.classList.toggle("active", i===idx));
 }
-function scrollToCard(index){
-  const nl = $("#note-list");
+function scrollToCard(index, inFolder){
+  const nl = inFolder ? $("#folder-note-list") : $("#note-list");
   const item = nl.children[index];
   if(!item) return;
   const target = item.offsetLeft - (nl.clientWidth - item.offsetWidth) / 2;
@@ -921,10 +1117,13 @@ function showHome(keepScroll){
   }
 }
 function locateRecord(id){
-  const idx = R().findIndex(r=>r.id===id);
+  const inFolder = state.view === "folder";
+  const list = inFolder ? recordsInFolder(state.currentFolderId) : R();
+  const idx = list.findIndex(r=>r.id===id);
   if(idx < 0) return;
-  setTimeout(()=> scrollToCard(idx), 100);
-  const item = document.querySelector(`.note-item[data-id="${id}"]`);
+  setTimeout(()=> scrollToCard(idx, inFolder), 100);
+  const scope = inFolder ? "#folder-note-list" : "#note-list";
+  const item = document.querySelector(`${scope} .note-item[data-id="${id}"]`);
   if(item){
     const card = item.querySelector(".note-card");
     card.classList.add("flash");
@@ -944,8 +1143,9 @@ function renameRecord(id){
         if(input){
           r.title = input.value.trim();
           idbPut(r);
-          writeMirror(state.records);
+          writeMirror(state.records, state.folders);
           renderHome();
+          if(state.view === "folder") renderFolder(state.currentFolderId);
           renderSidebar();
           toast("已修改名称");
         }
@@ -965,6 +1165,7 @@ function openDetail(id){
   const r = R().find(x=>x.id===id);
   if(!r) return;
   state.detailId = id;
+  state.detailFrom = { view: state.view, folderId: state.currentFolderId };
   $("#detail-created-text").textContent = `${fmtCNDate(r.createdAt)} · ${fmtWeek(r.createdAt)}　${fmtTime(r.createdAt)}`;
   $("#detail-title").textContent = r.title || "未命名记录";
   $("#detail-content").textContent = r.content;
@@ -976,6 +1177,9 @@ function openDetail(id){
 ========================================================= */
 function openEditor(id){
   state.editingId = id || null;
+  state.returnTo = (state.view === "detail" && state.detailFrom)
+    ? state.detailFrom
+    : { view: state.view, folderId: state.currentFolderId };
   const r = id ? R().find(x=>x.id===id) : null;
   $("#edit-title-label").textContent = r ? "继续记录" : "新建记录";
   $("#edit-created").textContent = r ? fmtCNDateTime(r.createdAt) : fmtCNDateTime(Date.now());
@@ -1017,15 +1221,19 @@ function saveEditor(){
   }else{
     /* 新建 */
     if(!added.trim()){ toast("写一点什么，再保存吧"); return; }
-    const rec = {id:newId(), title, content:added, createdAt:now, date:now};
+    const rec = {id:newId(), title, content:added, createdAt:now, date:now, folderId: state.currentFolderId || "default"};
     state.records.push(rec);
     idbPut(rec);
     toast("已保存");
   }
   state.records = sortRecs(state.records);
-  writeMirror(state.records);
+  writeMirror(state.records, state.folders);
   renderSidebar();
-  showHome(false);
+  if(state.returnTo.view === "folder"){
+    showFolder(state.returnTo.folderId || "default");
+  }else{
+    showHome(false);
+  }
   if(state.editingId){
     setTimeout(()=> locateRecord(state.editingId), 350);
     state.editingId = null;
@@ -1046,11 +1254,16 @@ function askDelete(id){
       {text:"删除", cls:"mbtn-danger", onClick: async ()=>{
         state.records = R().filter(x=>x.id!==id);
         idbDelete(id);
-        writeMirror(state.records);
+        writeMirror(state.records, state.folders);
         renderHome();
         renderSidebar();
         toast("已删除");
-        showHome(true);
+        const from = state.detailFrom || {};
+        if(from.view === "folder" && from.folderId){
+          showFolder(from.folderId);
+        }else{
+          showHome(true);
+        }
       }},
     ],
   });
@@ -1070,9 +1283,10 @@ function exportJSON(){
   if(!list.length){ toast("还没有记录可以导出"); return; }
   const data = {
     app: "quiet-timeline-diary",
-    version: 2,
+    version: 3,
     exportedAt: new Date().toISOString(),
-    records: list.map(r=>({id:r.id, title:r.title||"", content:r.content||"", createdAt:r.createdAt, date:r.createdAt})),
+    folders: F(),
+    records: list.map(r=>({id:r.id, title:r.title||"", content:r.content||"", createdAt:r.createdAt, date:r.createdAt, folderId:r.folderId||"default"})),
   };
   downloadFile(`我的记录-备份-${fmtDate(Date.now())}.json`, JSON.stringify(data, null, 2), "application/json");
   toast("已导出 JSON 备份");
@@ -1093,51 +1307,68 @@ function exportMD(){
   toast("已导出 Markdown");
 }
 function normalizeImported(raw){
-  const list = Array.isArray(raw) ? raw : (raw && Array.isArray(raw.records) ? raw.records : null);
-  if(!list) return null;
-  return list.map(r=>normalizeRecord(r)).filter(Boolean);
+  if(!raw || typeof raw !== "object") return null;
+  const isV2 = Array.isArray(raw);
+  const isV3 = raw && Array.isArray(raw.records);
+  const recList = isV2 ? raw : (isV3 ? raw.records : null);
+  if(!recList || !Array.isArray(recList)) return null;
+  const folderList = isV3 && Array.isArray(raw.folders) ? raw.folders : null;
+  const folders = folderList ? folderList.map(normalizeFolder).filter(Boolean) : [];
+  const records = recList.map(r=>normalizeRecord(r)).filter(Boolean);
+  return { folders, records };
 }
 function handleImport(raw){
   const backup = normalizeImported(raw);
-  if(!backup || !backup.length){ toast("这个文件里没有可用的记录"); return; }
+  if(!backup || !backup.records.length){ toast("这个文件里没有可用的记录"); return; }
+  /* 若备份无 folders，生成一个默认文件夹并把所有记录归到里面 */
+  if(!backup.folders.length){
+    backup.folders.push({ id: "default", name: "导入的记录", createdAt: Date.now() });
+    backup.records.forEach(r=> r.folderId = "default");
+  }
   const local = R();
   const keyOf = r => `${r.createdAt}|${r.title}|${r.content}`;
   const localKeys = new Set(local.map(keyOf));
   const localIds = new Set(local.map(r=>r.id));
-  const same = backup.filter(r=>localKeys.has(keyOf(r))).length;
-  const fresh = backup.length - same;
+  const same = backup.records.filter(r=>localKeys.has(keyOf(r))).length;
+  const fresh = backup.records.length - same;
   showModal({
     title: "导入备份",
-    body: `备份中共 ${backup.length} 篇记录，\n其中 ${same} 篇与当前记录相同，${fresh} 篇是新的。\n\n合并导入：把新记录加入现有记录；\n覆盖当前数据：清空现有 ${local.length} 篇，换成备份内容。`,
+    body: `备份中共 ${backup.records.length} 篇记录，\n其中 ${same} 篇与当前记录相同，${fresh} 篇是新的。\n\n合并导入：把新记录加入现有记录；\n覆盖当前数据：清空现有 ${local.length} 篇，换成备份内容。`,
     buttons: [
       {text:"合并导入（推荐）", cls:"mbtn-main", onClick: async ()=>{
+        /* 合并 folders：避免 ID/名称冲突 */
+        const folderMap = new Map(state.folders.map(f=>[f.id, f]));
+        backup.folders.forEach(f=>{ if(!folderMap.has(f.id)) { folderMap.set(f.id, f); state.folders.push(f); } });
         let added = 0;
-        for(const r of backup){
+        for(const r of backup.records){
           if(localKeys.has(keyOf(r))) continue;
           const rec = {...r};
           if(localIds.has(rec.id)) rec.id = newId();
+          if(!folderMap.has(rec.folderId)) rec.folderId = "default";
           state.records.push(rec);
           idbPut(rec);
           localIds.add(rec.id);
           added++;
         }
         state.records = sortRecs(state.records);
-        writeMirror(state.records);
+        writeMirror(state.records, state.folders);
         renderHome();
+        if(state.view === "folder") renderFolder(state.currentFolderId);
         renderSidebar();
         toast(added ? `已合并导入 ${added} 篇记录` : "备份中的记录都已存在");
       }},
       {text:"覆盖当前数据", cls:"mbtn-danger", onClick: ()=>{
         showModal({
           title: "确定覆盖？",
-          body: `覆盖会删除当前的 ${local.length} 篇记录，\n替换为备份中的 ${backup.length} 篇。`,
+          body: `覆盖会删除当前的 ${local.length} 篇记录，\n替换为备份中的 ${backup.records.length} 篇。`,
           buttons: [
             {text:"再想想", cls:"mbtn-ghost"},
             {text:"确定覆盖", cls:"mbtn-danger", onClick: async ()=>{
               await idbClear();
-              state.records = sortRecs(backup);
+              state.folders = backup.folders;
+              state.records = sortRecs(backup.records);
               state.records.forEach(idbPut);
-              writeMirror(state.records);
+              writeMirror(state.records, state.folders);
               renderHome();
               renderSidebar();
               toast(`已恢复 ${state.records.length} 篇记录`);
@@ -1196,8 +1427,8 @@ $("#modal-mask").addEventListener("click", e=>{ if(e.target === e.currentTarget)
 /* =========================================================
    事件绑定
 ========================================================= */
-$("#btn-new").addEventListener("click", ()=> openEditor(null));
-$("#btn-new-empty").addEventListener("click", ()=> openEditor(null));
+$("#btn-new").addEventListener("click", ()=>{ state.currentFolderId = "default"; openEditor(null); });
+$("#btn-new-empty").addEventListener("click", ()=>{ state.currentFolderId = "default"; openEditor(null); });
 $("#home-title").addEventListener("click", ()=>{ $("#home-scroll").scrollTo({top:0,behavior:"smooth"}); });
 $("#btn-sidebar").addEventListener("click", openSidebar);
 $("#note-list").addEventListener("click", e=>{
@@ -1211,7 +1442,28 @@ $("#note-list").addEventListener("click", e=>{
 $("#note-list").addEventListener("scroll", ()=>{
   requestAnimationFrame(updateCarouselDots);
 }, {passive:true});
-$("#btn-back").addEventListener("click", ()=> showHome(true));
+$("#btn-back").addEventListener("click", ()=>{
+  const from = state.detailFrom || {};
+  if(from.view === "folder" && from.folderId){ showFolder(from.folderId); }
+  else showHome(true);
+});
+
+/* 文件夹视图事件 */
+$("#folder-btn-new").addEventListener("click", ()=> openEditor(null));
+$("#folder-btn-new-empty").addEventListener("click", ()=> openEditor(null));
+$("#folder-btn-back").addEventListener("click", ()=> showHome(true));
+$("#folder-btn-settings").addEventListener("click", ()=>{ renderSettings(); showView("settings","vin-r"); });
+$("#folder-note-list").addEventListener("click", e=>{
+  const btn = e.target.closest('[data-action="rename"]');
+  if(btn){ e.stopPropagation(); renameRecord(btn.dataset.id); return; }
+  const item = e.target.closest(".note-item");
+  if(!item) return;
+  state.homeScroll = $("#folder-scroll").scrollTop;
+  openDetail(item.dataset.id);
+});
+$("#folder-note-list").addEventListener("scroll", ()=>{
+  requestAnimationFrame(updateFolderCarouselDots);
+}, {passive:true});
 $("#btn-detail-edit").addEventListener("click", ()=>{ if(state.detailId) openEditor(state.detailId); });
 $("#btn-edit").addEventListener("click", ()=>{ if(state.detailId) openEditor(state.detailId); });
 $("#btn-detail-del").addEventListener("click", ()=>{ if(state.detailId) askDelete(state.detailId); });
@@ -1230,19 +1482,24 @@ $("#edit-back").addEventListener("click", ()=>{
 $("#edit-cancel").addEventListener("click", ()=> $("#edit-back").click());
 $("#edit-save").addEventListener("click", saveEditor);
 $("#btn-settings").addEventListener("click", ()=>{ renderSettings(); showView("settings","vin-r"); });
-$("#settings-back").addEventListener("click", ()=> showHome(true));
+$("#settings-back").addEventListener("click", ()=>{
+  if(state.previousView === "folder" && state.currentFolderId){ showFolder(state.currentFolderId); }
+  else showHome(true);
+});
 $("#btn-export-json").addEventListener("click", exportJSON);
 $("#btn-export-md").addEventListener("click", exportMD);
 $("#btn-import").addEventListener("click", ()=> $("#import-file").click());
 $("#sidebar-close").addEventListener("click", closeSidebar);
 $("#sidebar-mask").addEventListener("click", closeSidebar);
 $("#sidebar-list").addEventListener("click", e=>{
-  const btn = e.target.closest('[data-action="rename"]');
-  if(btn){ e.stopPropagation(); renameRecord(btn.dataset.id); return; }
+  const newFolderBtn = e.target.closest("#sidebar-new-folder");
+  if(newFolderBtn){ e.stopPropagation(); createFolder(); return; }
+  const renameBtn = e.target.closest('[data-action="rename-folder"]');
+  if(renameBtn){ e.stopPropagation(); renameFolder(renameBtn.dataset.id); return; }
   const item = e.target.closest(".sidebar-item");
   if(!item) return;
   closeSidebar();
-  openDetail(item.dataset.id);
+  showFolder(item.dataset.id);
 });
 
 /* =========================================================
@@ -1250,21 +1507,41 @@ $("#sidebar-list").addEventListener("click", e=>{
 ========================================================= */
 (async function init(){
   try{ idb = await openIDB(); }catch(e){ idb = null; }
+
+  /* 1. 读取 records */
   let recs = null;
   if(idb) recs = await idbAll();
-  if(!recs || !recs.length){
-    const mirror = readMirror();
-    if(mirror && mirror.length){
-      recs = mirror;
-      if(idb) recs.forEach(idbPut);
-    }else if(!localStorage.getItem(INIT_FLAG)){
-      recs = welcomeRecords();
-      if(idb) recs.forEach(idbPut);
-      try{ localStorage.setItem(INIT_FLAG, "1"); }catch(e){}
-    }
+  let mirror = readMirror();
+  if((!recs || !recs.length) && mirror && Array.isArray(mirror.records) && mirror.records.length){
+    recs = mirror.records;
+    if(idb) recs.forEach(idbPut);
   }
-  state.records = sortRecs(upgradeData(recs || []));
-  writeMirror(state.records);
+
+  /* 2. 读取 folders（旧版 mirror 没有 folders，需生成默认） */
+  let folders = mirror && Array.isArray(mirror.folders) ? mirror.folders : [];
+
+  /* 3. 首次使用：欢迎记录 + 默认文件夹 */
+  if((!recs || !recs.length) && !localStorage.getItem(INIT_FLAG)){
+    recs = welcomeRecords();
+    folders = [{ id: "default", name: "全部记录", createdAt: Date.now() }];
+    if(idb) recs.forEach(idbPut);
+    try{ localStorage.setItem(INIT_FLAG, "1"); }catch(e){}
+  }
+
+  /* 4. 规范化数据 */
+  state.records = sortRecs((recs || []).map(r=>normalizeRecord(r, "default")).filter(Boolean));
+  state.folders = folders.map(normalizeFolder).filter(Boolean);
+
+  /* 5. 数据迁移：确保默认文件夹存在，并把无主记录绑定到它 */
+  if(!state.folders.some(f=>f.id === "default")){
+    state.folders.push({ id: "default", name: "全部记录", createdAt: Date.now() });
+  }
+  state.records.forEach(r=>{
+    if(!r.folderId || !getFolder(r.folderId)) r.folderId = "default";
+  });
+
+  /* 6. 持久化并渲染 */
+  writeMirror(state.records, state.folders);
   renderHome();
   showView("home", "vin-u");
 })();
