@@ -376,6 +376,36 @@ input,textarea{font:inherit;color:var(--ink)}
 .set-stat b{font-size:24px;font-weight:700;color:var(--green-deep);letter-spacing:.5px}
 .set-stat span{font-size:12.5px;color:var(--ink-2);letter-spacing:.5px}
 
+/* ---- 数据保险箱 / 回收站 行条目 ---- */
+.bk-list{margin-top:12px;display:flex;flex-direction:column;gap:8px}
+.bk-row{
+  display:flex;align-items:center;gap:8px;
+  background:rgba(255,255,255,.72);
+  border:1px solid rgba(134,184,162,.18);
+  border-radius:10px;padding:9px 11px;
+}
+.bk-main{flex:1;min-width:0}
+.bk-time{font-size:12.5px;font-weight:600;color:var(--ink);letter-spacing:.3px}
+.bk-sub{font-size:11.5px;color:var(--ink-2);margin-top:2px;line-height:1.6}
+.bk-tag{
+  flex:none;font-size:10.5px;letter-spacing:.4px;
+  padding:2.5px 8px;border-radius:999px;
+  background:var(--green-soft);color:var(--green-ink);
+}
+.bk-tag.blue{background:var(--blue-soft);color:var(--blue-ink)}
+.bk-act{
+  flex:none;border:none;background:transparent;cursor:pointer;
+  color:var(--green-deep);font-size:12.5px;font-weight:600;
+  padding:5px 7px;border-radius:8px;
+}
+.bk-act:active{background:rgba(94,148,128,.12)}
+.bk-act.danger{color:var(--danger)}
+.bk-empty{font-size:12px;color:var(--ink-2);padding:4px 2px;line-height:1.8}
+.rc-title{
+  font-size:13px;font-weight:600;color:var(--ink);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+
 /* ================= 侧边栏：我的文件夹 ================= */
 .sidebar-mask{
   position:fixed;inset:0;z-index:49;
@@ -720,7 +750,7 @@ input,textarea{font:inherit;color:var(--ink)}
             <path d="M20 92C20 46 46 20 92 18c2 46-22 72-66 74z" stroke="#86B8A2" stroke-width="5"/>
             <path d="M22 90C40 60 60 40 88 22" stroke="#86B8A2" stroke-width="4"/>
           </svg>
-          你的记录仅保存在此设备中，不会自动上传或同步。
+          <span>你的记录仅保存在此设备中，不会自动上传或同步。<br><span id="storage-status" style="font-size:11.5px;color:var(--ink-2)">存储保护：检测中…</span></span>
         </div>
       </div>
       <div class="set-card">
@@ -760,6 +790,36 @@ input,textarea{font:inherit;color:var(--ink)}
             选择备份文件
           </button>
         </div>
+      </div>
+      <div class="set-card">
+        <div class="set-head">
+          <div class="set-icon g">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5l7 3v5.2c0 4.6-3 8.4-7 9.8-4-1.4-7-5.2-7-9.8V6.5z"/><path d="M9.2 12l2 2 3.6-3.8"/></svg>
+          </div>
+          <div>
+            <div class="set-name">数据保险箱</div>
+            <div class="set-desc">导入等动作前会自动在这里留底（保留最近 10 份），万一有问题可以一键恢复。</div>
+          </div>
+        </div>
+        <div class="set-acts">
+          <button class="act-btn green" id="btn-backup-now">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5l7 3v5.2c0 4.6-3 8.4-7 9.8-4-1.4-7-5.2-7-9.8V6.5z"/><path d="M9.2 12l2 2 3.6-3.8"/></svg>
+            立即备份
+          </button>
+        </div>
+        <div class="bk-list" id="backup-list"><div class="bk-empty">读取中…</div></div>
+      </div>
+      <div class="set-card">
+        <div class="set-head">
+          <div class="set-icon b">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 7h15M9.5 7V4.8A1.3 1.3 0 0110.8 3.5h2.4a1.3 1.3 0 011.3 1.3V7M6.5 7l.8 12.2A1.5 1.5 0 008.8 20.5h6.4a1.5 1.5 0 001.5-1.3L17.5 7"/></svg>
+          </div>
+          <div>
+            <div class="set-name">回收站</div>
+            <div class="set-desc">删除的记录先放在这里，随时可以恢复；彻底删除后才真正清除。</div>
+          </div>
+        </div>
+        <div class="bk-list" id="recycle-list"><div class="bk-empty">读取中…</div></div>
       </div>
     </div>
   </div>
@@ -831,19 +891,26 @@ function appendStamp(text, ts){
 ========================================================= */
 const IDB_NAME = "quiet-timeline-diary";
 const IDB_STORE = "records";
+const IDB_VERSION = 3; /* v2→v3：新增 settings / backups_meta 两表，records 表结构与数据不动 */
+const IDB_STORE_SETTINGS = "settings";        /* key-value 设置表（keyPath "key"） */
+const IDB_STORE_BACKUPS = "backups_meta";     /* 库内自动备份表（keyPath "id"） */
 const MIRROR_KEY = "qtd-mirror-v3"; /* v3：含 folders 与 records */
 const INIT_FLAG = "qtd-inited-v3";
+const BACKUP_KEEP = 10; /* 库内自动备份保留份数（超出自动淘汰最旧） */
 let idb = null;
 
 function openIDB(){
   return new Promise((resolve, reject)=>{
     if(!window.indexedDB){ reject(new Error("no idb")); return; }
     let req;
-    try{ req = indexedDB.open(IDB_NAME, 2); }
+    try{ req = indexedDB.open(IDB_NAME, IDB_VERSION); }
     catch(e){ reject(e); return; }
     req.onupgradeneeded = (event)=>{
       const db = req.result;
+      /* 铁律：表不存在才创建；已有表（含老用户的 records）一律不碰，老数据天然保留 */
       if(!db.objectStoreNames.contains(IDB_STORE)) db.createObjectStore(IDB_STORE, {keyPath:"id"});
+      if(!db.objectStoreNames.contains(IDB_STORE_SETTINGS)) db.createObjectStore(IDB_STORE_SETTINGS, {keyPath:"key"});
+      if(!db.objectStoreNames.contains(IDB_STORE_BACKUPS)) db.createObjectStore(IDB_STORE_BACKUPS, {keyPath:"id"});
     };
     req.onsuccess = ()=> resolve(req.result);
     req.onerror = ()=> reject(req.error);
@@ -867,6 +934,43 @@ function idbClear(){ return new Promise(r=>{ try{
   const tx = idb.transaction(IDB_STORE,"readwrite");
   tx.objectStore(IDB_STORE).clear(); tx.oncomplete = r; tx.onerror = r;
 }catch(e){ r(); } }); }
+
+/* ---- 多表通用底层（settings / backups_meta 用） ---- */
+function idbAllIn(store){
+  return new Promise((resolve)=>{ try{
+    const rq = idb.transaction(store,"readonly").objectStore(store).getAll();
+    rq.onsuccess = ()=> resolve(rq.result || []);
+    rq.onerror = ()=> resolve([]);
+  }catch(e){ resolve([]); } });
+}
+function idbGetIn(store, key){
+  return new Promise((resolve)=>{ try{
+    const rq = idb.transaction(store,"readonly").objectStore(store).get(key);
+    rq.onsuccess = ()=> resolve(rq.result || null);
+    rq.onerror = ()=> resolve(null);
+  }catch(e){ resolve(null); } });
+}
+function idbPutIn(store, val){
+  return new Promise((resolve)=>{ try{
+    const tx = idb.transaction(store,"readwrite");
+    tx.objectStore(store).put(val); tx.oncomplete = resolve; tx.onerror = resolve;
+  }catch(e){ resolve(); } });
+}
+function idbDelIn(store, key){
+  return new Promise((resolve)=>{ try{
+    const tx = idb.transaction(store,"readwrite");
+    tx.objectStore(store).delete(key); tx.oncomplete = resolve; tx.onerror = resolve;
+  }catch(e){ resolve(); } });
+}
+
+/* ---- 设置（key-value，存 settings 表） ---- */
+async function getSetting(key, defaultVal){
+  const r = await idbGetIn(IDB_STORE_SETTINGS, key);
+  return r ? r.value : (defaultVal === undefined ? null : defaultVal);
+}
+async function setSetting(key, value){
+  await idbPutIn(IDB_STORE_SETTINGS, { key, value, updatedAt: Date.now() });
+}
 function writeMirror(records, folders){
   try{
     const data = { folders: folders || state.folders, records: records || state.records };
@@ -905,8 +1009,10 @@ const state = {
 };
 const R = ()=> state.records;
 const F = ()=> state.folders;
+const aliveRecords = ()=> state.records.filter(r=>!r.deletedAt); /* 未删除（回收站外）的记录 */
+const deletedRecords = ()=> state.records.filter(r=>r.deletedAt); /* 回收站里的记录 */
 const getFolder = id => state.folders.find(f=>f.id===id);
-const recordsInFolder = id => state.records.filter(r=>r.folderId===id);
+const recordsInFolder = id => state.records.filter(r=>r.folderId===id && !r.deletedAt);
 
 /* =========================================================
    数据兼容：保留已有记录，首次创建时间不可变
@@ -921,6 +1027,9 @@ function normalizeRecord(r, defaultFolderId){
     createdAt: created,
     date: created,          // date 固定等于首次创建时间，不再变化
     folderId: String(r.folderId || defaultFolderId || "default"),
+    /* 三时间戳（v3 新增，旧数据兜底补齐；createdAt 永不变，向后兼容） */
+    updatedAt: Number(r.updatedAt) || created,
+    deletedAt: Number(r.deletedAt) || null,   // 非空 = 在回收站（软删除）
   };
 }
 function normalizeFolder(f){
@@ -953,6 +1062,77 @@ function welcomeRecords(){
 }
 
 /* =========================================================
+   数据保险箱：库内自动备份（backups_meta 表，保留最近 10 份）
+   原则：大动作（导入 / 恢复 / 手动）前先留底，出事可一键回滚
+========================================================= */
+const BACKUP_REASONS = { manual:"手动备份", import:"导入前自动", "pre-restore":"恢复前自动", "pre-clear":"清空前自动" };
+async function createBackup(reason){
+  try{
+    const now = Date.now();
+    const id = `bk_${now}_${Math.random().toString(36).slice(2,6)}`;
+    await idbPutIn(IDB_STORE_BACKUPS, {
+      id, createdAt: now,
+      reason: BACKUP_REASONS[reason] || reason || "自动备份",
+      recordCount: state.records.length,
+      folderCount: state.folders.length,
+      records: state.records,   /* 全量快照（含回收站记录，回滚才完整） */
+      folders: state.folders,
+    });
+    /* 滚动淘汰：只保留最近 BACKUP_KEEP 份 */
+    const all = await listBackups();
+    for(let i = BACKUP_KEEP; i < all.length; i++) await idbDelIn(IDB_STORE_BACKUPS, all[i].id);
+    return id;
+  }catch(e){ return null; }
+}
+async function listBackups(){
+  const all = await idbAllIn(IDB_STORE_BACKUPS);
+  return all.sort((a,b)=> b.createdAt - a.createdAt); /* 新的在前 */
+}
+async function deleteBackupById(id){ await idbDelIn(IDB_STORE_BACKUPS, id); }
+async function restoreBackupById(id){
+  const b = await idbGetIn(IDB_STORE_BACKUPS, id);
+  if(!b || !Array.isArray(b.records)){ toast("这份备份读不出来了"); return false; }
+  await createBackup("pre-restore");            /* 恢复前先备份当前，可再反悔 */
+  await idbClear();
+  state.folders = (b.folders || []).map(normalizeFolder).filter(Boolean);
+  state.records = sortRecs(b.records.map(r=>normalizeRecord(r,"default")).filter(Boolean));
+  if(!state.folders.some(f=>f.id === "default")){
+    state.folders.push({ id:"default", name:"全部记录", createdAt: Date.now() });
+  }
+  state.records.forEach(r=>{ if(!getFolder(r.folderId)) r.folderId = "default"; });
+  for(const r of state.records) idbPut(r);
+  writeMirror(state.records, state.folders);
+  renderHome();
+  renderSidebar();
+  return true;
+}
+
+/* =========================================================
+   回收站：软删除（打 deletedAt 标记，不真删，可恢复）
+========================================================= */
+function softDeleteRecord(id){
+  const r = R().find(x=>x.id===id);
+  if(!r) return false;
+  const now = Date.now();
+  r.deletedAt = now;
+  r.updatedAt = now;
+  idbPut(r);
+  return true;
+}
+function restoreRecord(id){
+  const r = R().find(x=>x.id===id);
+  if(!r) return false;
+  r.deletedAt = null;
+  r.updatedAt = Date.now();
+  idbPut(r);
+  return true;
+}
+function purgeRecord(id){ /* 彻底删除：从内存与 records 表中移除（备份快照不受影响） */
+  state.records = state.records.filter(x=>x.id!==id);
+  idbDelete(id);
+}
+
+/* =========================================================
    视图切换
 ========================================================= */
 const VIEWS = ["home","folder","detail","edit","settings"];
@@ -975,7 +1155,7 @@ function showFolder(id){
    首页渲染：记录列表（从旧到新）
 ========================================================= */
 function renderHome(){
-  const list = R();
+  const list = aliveRecords(); /* 回收站里的不显示 */
   $("#cat-count").textContent = `${list.length} 篇记录`;
   const nl = $("#note-list");
   const dots = $("#carousel-dots");
@@ -1142,7 +1322,7 @@ function showHome(keepScroll){
 }
 function locateRecord(id){
   const inFolder = state.view === "folder";
-  const list = inFolder ? recordsInFolder(state.currentFolderId) : R();
+  const list = inFolder ? recordsInFolder(state.currentFolderId) : aliveRecords(); /* 与渲染列表同源，索引才对得上 */
   const idx = list.findIndex(r=>r.id===id);
   if(idx < 0) return;
   setTimeout(()=> scrollToCard(idx, inFolder), 100);
@@ -1240,12 +1420,13 @@ function saveEditor(){
     if(!added.trim()){ toast("本次还没有新增内容"); return; }
     r.title = title;  /* 标题可直接修改，不属于历史正文 */
     r.content = r.content + appendStamp(added, now);
+    r.updatedAt = now;   /* 三时间戳：更新时间 */
     idbPut(r);
     toast("已追加保存");
   }else{
     /* 新建 */
     if(!added.trim()){ toast("写一点什么，再保存吧"); return; }
-    const rec = {id:newId(), title, content:added, createdAt:now, date:now, folderId: state.currentFolderId || "default"};
+    const rec = {id:newId(), title, content:added, createdAt:now, date:now, folderId: state.currentFolderId || "default", updatedAt:now, deletedAt:null};
     state.records.push(rec);
     idbPut(rec);
     toast("已保存");
@@ -1272,16 +1453,15 @@ function askDelete(id){
   if(!r) return;
   showModal({
     title: "删除这一篇？",
-    body: "删除后无法恢复，\n这篇记录会从列表里消失。",
+    body: "会先移入回收站（设置页里可恢复），\n这篇记录会从列表里消失。",
     buttons: [
       {text:"再想想", cls:"mbtn-ghost"},
       {text:"删除", cls:"mbtn-danger", onClick: async ()=>{
-        state.records = R().filter(x=>x.id!==id);
-        idbDelete(id);
-        writeMirror(state.records, state.folders);
+        softDeleteRecord(id);          /* 软删除：只打标记，数据还在库里 */
+        writeMirror(state.records, state.folders);  /* 镜像仍写全量，旧版也不丢数据 */
         renderHome();
         renderSidebar();
-        toast("已删除");
+        toast("已移入回收站");
         const from = state.detailFrom || {};
         if(from.view === "folder" && from.folderId){
           showFolder(from.folderId);
@@ -1297,26 +1477,27 @@ function askDelete(id){
    设置页：统计 / 导出 / 导入
 ========================================================= */
 function renderSettings(){
-  const list = R();
+  const list = aliveRecords();
   $("#stat-count").textContent = list.length;
   $("#stat-span").textContent = list.length
     ? `${fmtDate(list[0].createdAt)} — ${fmtDate(list[list.length-1].createdAt)}` : "";
+  refreshSettingsExtras();
 }
 function exportJSON(){
-  const list = R();
+  const list = aliveRecords(); /* 只导出未删除的记录 */
   if(!list.length){ toast("还没有记录可以导出"); return; }
   const data = {
     app: "quiet-timeline-diary",
     version: 3,
     exportedAt: new Date().toISOString(),
     folders: F(),
-    records: list.map(r=>({id:r.id, title:r.title||"", content:r.content||"", createdAt:r.createdAt, date:r.createdAt, folderId:r.folderId||"default"})),
+    records: list.map(r=>({id:r.id, title:r.title||"", content:r.content||"", createdAt:r.createdAt, date:r.createdAt, folderId:r.folderId||"default", updatedAt:r.updatedAt||r.createdAt, deletedAt:null})),
   };
   downloadFile(`我的记录-备份-${fmtDate(Date.now())}.json`, JSON.stringify(data, null, 2), "application/json");
   toast("已导出 JSON 备份");
 }
 function exportMD(){
-  const list = R();
+  const list = aliveRecords();
   if(!list.length){ toast("还没有记录可以导出"); return; }
   const parts = [
     "# 我的记录\n",
@@ -1360,6 +1541,7 @@ function handleImport(raw){
     body: `备份中共 ${backup.records.length} 篇记录，\n其中 ${same} 篇与当前记录相同，${fresh} 篇是新的。\n\n合并导入：把新记录加入现有记录；\n覆盖当前数据：清空现有 ${local.length} 篇，换成备份内容。`,
     buttons: [
       {text:"合并导入（推荐）", cls:"mbtn-main", onClick: async ()=>{
+        await createBackup("import");   /* 导入前自动留底，可回滚 */
         /* 合并 folders：避免 ID/名称冲突 */
         const folderMap = new Map(state.folders.map(f=>[f.id, f]));
         backup.folders.forEach(f=>{ if(!folderMap.has(f.id)) { folderMap.set(f.id, f); state.folders.push(f); } });
@@ -1388,6 +1570,7 @@ function handleImport(raw){
           buttons: [
             {text:"再想想", cls:"mbtn-ghost"},
             {text:"确定覆盖", cls:"mbtn-danger", onClick: async ()=>{
+              await createBackup("import");   /* 覆盖前自动留底当前全部数据 */
               await idbClear();
               state.folders = backup.folders;
               state.records = sortRecs(backup.records);
@@ -1415,6 +1598,132 @@ $("#import-file").addEventListener("change", e=>{
   reader.onerror = ()=> toast("无法读取这个备份文件");
   reader.readAsText(f, "utf-8");
   e.target.value = "";
+});
+
+/* =========================================================
+   设置页：数据保险箱 / 回收站 / 存储状态
+========================================================= */
+function refreshSettingsExtras(){
+  renderBackupList();
+  renderRecycleList();
+  renderStorageStatus();
+}
+async function renderBackupList(){
+  const box = $("#backup-list");
+  if(!box) return;
+  const list = await listBackups();
+  if(!list.length){
+    box.innerHTML = `<div class="bk-empty">还没有库内备份。点上方"立即备份"创建一份；导出的 JSON 文件仍是最重要的随身备份。</div>`;
+    return;
+  }
+  box.innerHTML = list.map(b=>`
+    <div class="bk-row" data-bid="${esc(b.id)}">
+      <span class="bk-tag">${esc(b.reason || "备份")}</span>
+      <div class="bk-main">
+        <div class="bk-time">${fmtCNDate(b.createdAt)} ${fmtTime(b.createdAt)}</div>
+        <div class="bk-sub">${b.recordCount || 0} 篇记录 · ${b.folderCount || 0} 个文件夹</div>
+      </div>
+      <button class="bk-act" data-action="bk-restore">恢复</button>
+      <button class="bk-act danger" data-action="bk-del">删除</button>
+    </div>`).join("");
+}
+function renderRecycleList(){
+  const box = $("#recycle-list");
+  if(!box) return;
+  const list = deletedRecords();
+  if(!list.length){
+    box.innerHTML = `<div class="bk-empty">回收站是空的。删掉的记录会先放在这里。</div>`;
+    return;
+  }
+  box.innerHTML = list.slice().sort((a,b)=>b.deletedAt - a.deletedAt).map(r=>`
+    <div class="bk-row" data-rid="${esc(r.id)}">
+      <div class="bk-main">
+        <div class="rc-title">${esc(r.title || "未命名记录")}</div>
+        <div class="bk-sub">创建于 ${fmtCNDate(r.createdAt)} · 删除于 ${fmtCNDate(r.deletedAt)} ${fmtTime(r.deletedAt)}</div>
+      </div>
+      <button class="bk-act" data-action="rc-restore">恢复</button>
+      <button class="bk-act danger" data-action="rc-purge">彻底删除</button>
+    </div>`).join("");
+}
+async function renderStorageStatus(){
+  const el = $("#storage-status");
+  if(!el) return;
+  let persisted = false;
+  try{ persisted = !!(navigator.storage && await navigator.storage.persisted()); }catch(e){}
+  let usedText = "";
+  try{
+    const est = await navigator.storage.estimate();
+    if(est && est.usage != null) usedText = `，已用 ${(est.usage/1048576).toFixed(1)} MB`;
+  }catch(e){}
+  el.textContent = `存储保护：${persisted ? "已开启（降低被系统清理的风险）" : "未开启"}${usedText}`;
+}
+$("#btn-backup-now").addEventListener("click", async ()=>{
+  const id = await createBackup("manual");
+  renderBackupList();
+  toast(id ? "已存入数据保险箱" : "备份失败，请重试");
+});
+$("#backup-list").addEventListener("click", e=>{
+  const row = e.target.closest(".bk-row");
+  const act = e.target.closest("[data-action]");
+  if(!row || !act) return;
+  const bid = row.dataset.bid;
+  if(act.dataset.action === "bk-restore"){
+    showModal({
+      title: "恢复这份备份？",
+      body: "会把现在的全部记录和文件夹，替换成这份备份的内容。\n恢复前会先把当前数据自动备份一份，随时可以再恢复回来。",
+      buttons: [
+        {text:"再想想", cls:"mbtn-ghost"},
+        {text:"恢复", cls:"mbtn-main", onClick: async ()=>{
+          const ok = await restoreBackupById(bid);
+          toast(ok ? "已恢复" : "恢复失败");
+          if(ok){ renderBackupList(); renderRecycleList(); }
+        }},
+      ],
+    });
+  }else if(act.dataset.action === "bk-del"){
+    showModal({
+      title: "删除这份备份？",
+      body: "只删这份库内备份，\n不影响你的日记正文。",
+      buttons: [
+        {text:"再想想", cls:"mbtn-ghost"},
+        {text:"删除", cls:"mbtn-danger", onClick: async ()=>{
+          await deleteBackupById(bid);
+          renderBackupList();
+          toast("已删除这份备份");
+        }},
+      ],
+    });
+  }
+});
+$("#recycle-list").addEventListener("click", e=>{
+  const row = e.target.closest(".bk-row");
+  const act = e.target.closest("[data-action]");
+  if(!row || !act) return;
+  const rid = row.dataset.rid;
+  if(act.dataset.action === "rc-restore"){
+    if(restoreRecord(rid)){
+      writeMirror(state.records, state.folders);
+      renderHome();
+      renderRecycleList();
+      toast("已恢复到原来的位置");
+    }
+  }else if(act.dataset.action === "rc-purge"){
+    const r = R().find(x=>x.id===rid);
+    showModal({
+      title: "彻底删除？",
+      body: "这篇记录会从设备里真正删掉，列表和回收站里都不再出现。",
+      buttons: [
+        {text:"再想想", cls:"mbtn-ghost"},
+        {text:"彻底删除", cls:"mbtn-danger", onClick: ()=>{
+          purgeRecord(rid);
+          writeMirror(state.records, state.folders);
+          renderHome();
+          renderRecycleList();
+          toast("已彻底删除");
+        }},
+      ],
+    });
+  }
 });
 
 /* =========================================================
@@ -1531,6 +1840,9 @@ $("#sidebar-list").addEventListener("click", e=>{
 ========================================================= */
 (async function init(){
   try{ idb = await openIDB(); }catch(e){ idb = null; }
+
+  /* 0. 申请持久化存储：降低浏览器在存储压力下自动清理 IndexedDB 的概率 */
+  try{ if(navigator.storage && navigator.storage.persist) await navigator.storage.persist(); }catch(e){}
 
   /* 1. 读取 records */
   let recs = null;
